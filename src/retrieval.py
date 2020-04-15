@@ -7,8 +7,11 @@ import sys
 import os
 import random
 
-retrieval_type="collection" #[collection| passage]
+# arguments, should be command line parameters (e.g. argparse)
+retrieval_type="document" #[document| passage]
+
 metadata_path="/mnt/nfs/multilingual/kaggle-covid19"
+index_root="/mnt/nfs/multilingual/kaggle-covid19/xabi_scripts"
 
 metadata="metadata.csv_covid-19.kwrds.csv"
 passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv"
@@ -28,9 +31,15 @@ if retrieval_type.lower() == "passage":
 output=[]
 #fieldnames=["doc_id","source","author", "url","title",]
 
-# indri query    
-index = pyndri.Index('./BildumaIndex')
+# indri
+index_path=os.path.join(index_root,'BildumaIndex')
+if retrieval_type.lower() == "passage":
+    index_path=os.path.join(index_root,'BildumaParIndex')
+
+index = pyndri.Index(index_path)
+
 query="hello world"
+
 tokenizer = RegexpTokenizer(r'\w+')
 querylc = query.lower()
 tokens = tokenizer.tokenize(querylc)        
@@ -41,21 +50,27 @@ for int_document_id, score in results:
     ext_document_id, _ = index.document(int_document_id)
 
     doc_id = ext_document_id
+    snippet=""
     if retrieval_type.lower() == "passage":
         passage_metadata_row = metadata_pas[metadata_pas["paragraph_id"]==ext_document_id]
-        doc_id=passage_mentadata_row.iloc[0]["cord_uid"]
+        doc_id=passage_metadata_row.iloc[0]["cord_uid"]
+        snippet=passage_metadata_row.iloc[0]["text"]
+
+    # common fields for documents and passages
+    doc_metadata_row = metadata[metadata["cord_uid"]==ext_document_id]
+    url=doc_metadata_row.iloc[0]["doc_url"]
+    title=doc_metadata_row.iloc[0]["title"]
+    author=doc_metadata_row.iloc[0]["author"]
+    journal=doc_metadata_row.iloc[0]["journal"]
+    ranking_score=score
+    coords = {"coord_x":random.uniform(0, 1),"coord_y":random.uniform(0, 1)}
+    
+    if retrieval_type.lower() == "document":
+        snippet=doc_metadata_row.iloc[0]["abstract"]
+    
         
-    if retrieval_type.lower() == "collection":
-        doc_metadata_row = metadata[metadata["cord_uid"]==ext_document_id]
-        url=doc_metadata_row.iloc[0]["doc_url"]
-        title=doc_metadata_row.iloc[0]["doc_url"]
-        author=doc_metadata_row.iloc[0]["doc_url"]
-        abstract=doc_metadata_row.iloc[0]["abstract"]
-        ranking_score=score
-        coords = {"coord_x":random.uniform(0, 1),"coord_y":random.uniform(0, 1)}
-        
-        doc ={"doc_id":doc_id, "title":title, "source":source,"author":author, "url":url,"abstract":abstract,"ranking_score":ranking_score,"coordinates": coords}
-        output.append(doc)
+    doc ={"doc_id":doc_id, "title":title, "journal":journal,"author":author, "url":url,"text":snippet,"ranking_score":ranking_score,"coordinates": coords}
+    output.append(doc)
     #print(ext_document_id, score)
 
 json.dumps(outputindent=4, sort_keys=True)
