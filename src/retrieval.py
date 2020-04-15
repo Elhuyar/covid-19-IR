@@ -2,10 +2,11 @@ import pyndri
 from nltk.tokenize import RegexpTokenizer
 
 import pandas as pd
-import csv
+import json
 import sys
 import os
 import random
+
 
 # arguments, should be command line parameters (e.g. argparse)
 retrieval_type="document" #[document| passage]
@@ -24,8 +25,6 @@ sys.stderr.write("data shape: {} \n".format(data.shape))
 metadata_pas={}
 if retrieval_type.lower() == "passage":
     metadata_pas=pd.read_csv(os.path.join(metadata_path,metadata))
-    sys.stderr.write("data shape: {} \n".format(data.shape))
-
 
 # output format for bokeh
 output=[]
@@ -46,7 +45,9 @@ tokens = tokenizer.tokenize(querylc)
 tokenized_query=" ".join(tokens)
 
 results = index.query(tokenized_query, results_requested=50)
+count=0
 for int_document_id, score in results:
+    sys.stderr.write("\n processed {} documents".format(count))
     ext_document_id, _ = index.document(int_document_id)
 
     doc_id = ext_document_id
@@ -58,9 +59,9 @@ for int_document_id, score in results:
 
     # common fields for documents and passages
     doc_metadata_row = metadata[metadata["cord_uid"]==ext_document_id]
-    url=doc_metadata_row.iloc[0]["doc_url"]
+    url=doc_metadata_row.iloc[0]["url"]
     title=doc_metadata_row.iloc[0]["title"]
-    author=doc_metadata_row.iloc[0]["author"]
+    author=doc_metadata_row.iloc[0]["authors"]
     journal=doc_metadata_row.iloc[0]["journal"]
     ranking_score=score
     coords = {"coord_x":random.uniform(0, 1),"coord_y":random.uniform(0, 1)}
@@ -73,6 +74,6 @@ for int_document_id, score in results:
     output.append(doc)
     #print(ext_document_id, score)
 
-json.dumps(outputindent=4, sort_keys=True)
+json.dumps(output, indent=4, sort_keys=True)
 
 
