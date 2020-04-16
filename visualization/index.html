@@ -1,0 +1,511 @@
+    <html>
+    <head>
+    </head>
+    
+    <body>
+    <label for="task">Select a task:</label>
+    <select id="task" onchange="fill_queries();">
+    <option value="Task1">Task 1</option>
+    <option value="Task2">Task 2</option>
+    <option value="Task3">Task 3</option>
+    <option value="Task4">Task 4</option>
+    <option value="Task5">Task 5</option>
+    <option value="Task6">Task 6</option>
+    <option value="Task7">Task 7</option>
+    <option value="Task9">Task 9</option>
+    <option value="Task10">Task 10</option>
+    </select>
+
+    <label for="query">Select a task:</label>
+    <select id="query" onchange="fill_queries();">
+    </select>
+
+
+
+    <script>
+
+var task_queries = {
+    "Task1": [
+	{
+	    "id": 1,
+	    "title": "Range of incubation periods for the disease in humans (and how this varies across age and health status) and how long individuals are contagious, even after recovery."
+	},
+	{
+	    "id": 2,
+	    "title": "Prevalence of asymptomatic shedding and transmission (e.g., particularly children)."
+	},
+	{
+	    "id": 3,
+	    "title": "Seasonality of transmission."
+	},
+	{
+	    "id": 4,
+	    "title": "Physical science of the coronavirus (e.g., charge distribution, adhesion to hydrophilic/phobic surfaces, environmental survival to inform decontamination efforts for affected areas and provide information about viral shedding)."
+	},
+	{
+	    "id": 5,
+	    "title": "Persistence and stability on a multitude of substrates and sources (e.g., nasal discharge, sputum, urine, fecal matter, blood)."
+	},
+	{
+	    "id": 6,
+	    "title": "Persistence of virus on surfaces of different materials (e,g., copper, stainless steel, plastic)."
+	},
+	{
+	    "id": 7,
+	    "title": "Natural history of the virus and shedding of it from an infected person"
+	},
+	{
+	    "id": 8,
+	    "title": "Implementation of diagnostics and products to improve clinical processes"
+	},
+	{
+	    "id": 9,
+	    "title": "Disease models, including animal models for infection, disease and transmission"
+	},
+	{
+	    "id": 10,
+	    "title": "Tools and studies to monitor phenotypic change and potential adaptation of the virus"
+	},
+	{
+	    "id": 11,
+	    "title": "Immune response and immunity"
+	},
+	{
+	    "id": 12,
+	    "title": "Effectiveness of movement control strategies to prevent secondary transmission in health care and community settings"
+	},
+	{
+	    "id": 13,
+	    "title": "Effectiveness of personal protective equipment (PPE) and its usefulness to reduce risk of transmission in health care and community settings"
+	},
+	{
+	    "id": 14,
+	    "title": "Role of the environment in transmission"
+	}
+    ],
+    "Task2": [
+	{
+	    "id": 15,
+	    "title": "Data on potential risks factors: Smoking, pre-existing pulmonary disease"
+	},
+	{
+	    "id": 16,
+	    "title": "Data on potential risks factors: Co-infections (determine whether co-existing respiratory/viral infections make the virus more transmissible or virulent) and other co-morbidities"
+	},
+	{
+	    "id": 17,
+	    "title": "Data on potential risks factors: Neonates and pregnant women"
+	},
+	{
+	    "id": 18,
+	    "title": "Data on potential risks factors: Socio-economic and behavioral factors to understand the economic impact of the virus and whether there were differences."
+	},
+	{
+	    "id": 19,
+	    "title": "Transmission dynamics of the virus, including the basic reproductive number, incubation period, serial interval, modes of transmission and environmental factors"
+	},
+	{
+	    "id": 20,
+	    "title": "Severity of disease, including risk of fatality among symptomatic hospitalized patients, and high-risk patient groups"
+	},
+	{
+	    "id": 21,
+	    "title": "Susceptibility of populations"
+	},
+	{
+	    "id": 22,
+	    "title": "Public health mitigation measures that could be effective for control"
+	}
+    ],
+    "Task3": [
+	{
+	    "id": 23,
+	    "title": "Real-time tracking of whole genomes and a mechanism for coordinating the rapid dissemination of that information to inform the development of diagnostics and therapeutics and to track variations of the virus over time."
+	},
+	{
+	    "id": 24,
+	    "title": "Access to geographic and temporal diverse sample sets to understand geographic distribution and genomic differences, and determine whether there is more than one strain in circulation. Multi-lateral agreements such as the Nagoya Protocol could be leveraged."
+	},
+	{
+	    "id": 25,
+	    "title": "Evidence that livestock could be infected (e.g., field surveillance, genetic sequencing, receptor binding) and serve as a reservoir after the epidemic appears to be over: Evidence of whether farmers are infected, and whether farmers could have played a role in the origin."
+	},
+	{
+	    "id": 26,
+	    "title": "Evidence that livestock could be infected (e.g., field surveillance, genetic sequencing, receptor binding) and serve as a reservoir after the epidemic appears to be over: Surveillance of mixed wildlife- livestock farms for SARS-CoV-2 and other coronaviruses in Southeast Asia."
+	},
+	{
+	    "id": 27,
+	    "title": "Evidence that livestock could be infected (e.g., field surveillance, genetic sequencing, receptor binding) and serve as a reservoir after the epidemic appears to be over: Experimental infections to test host range for this pathogen."
+	},
+	{
+	    "id": 28,
+	    "title": "Animal host(s) and any evidence of continued spill-over to humans"
+	},
+	{
+	    "id": 29,
+	    "title": "Socioeconomic and behavioral risk factors for this spill-over"
+	},
+	{
+	    "id": 30,
+	    "title": "Sustainable risk reduction strategies"
+	},
+	{
+	    "id": 31,
+	    "title": "Socioeconomic and behavioral risk factors for this spill-over"
+	},
+	{
+	    "id": 32,
+	    "title": "Sustainable risk reduction strategies"
+	}
+    ],
+    "Task4": [
+	{
+	    "id": 33,
+	    "title": "Effectiveness of drugs being developed and tried to treat COVID-19 patients."
+	},
+	{
+	    "id": 34,
+	    "title": "Clinical and bench trials to investigate less common viral inhibitors against COVID-19 such as naproxen, clarithromycin, and minocycline that may exert effects on viral replication: Methods evaluating potential complication of Antibody-Dependent Enhancement (ADE) in vaccine recipients."
+	},
+	{
+	    "id": 35,
+	    "title": "Exploration of use of best animal models and their predictive value for a human vaccine."
+	},
+	{
+	    "id": 36,
+	    "title": "Capabilities to discover a therapeutic (not vaccine) for the disease, and clinical effectiveness studies to discover therapeutics, to include antiviral agents."
+	},
+	{
+	    "id": 37,
+	    "title": "Alternative models to aid decision makers in determining how to prioritize and distribute scarce, newly proven therapeutics as production ramps up. This could include identifying approaches for expanding production capacity to ensure equitable and timely distribution to populations in need."
+	},
+	{
+	    "id": 38,
+	    "title": "Efforts targeted at a universal coronavirus vaccine."
+	},
+	{
+	    "id": 39,
+	    "title": "Efforts to develop animal models and standardize challenge studies"
+	},
+	{
+	    "id": 40,
+	    "title": "Efforts to develop prophylaxis clinical studies and prioritize in healthcare workers"
+	},
+	{
+	    "id": 41,
+	    "title": "Approaches to evaluate risk for enhanced disease after vaccination"
+	},
+	{
+	    "id": 42,
+	    "title": "Assays to evaluate vaccine immune response and process development for vaccines, alongside suitable animal models [in conjunction with therapeutics]"
+	}
+    ],
+    "Task5": [
+	{
+	    "id": 43,
+	    "title": "Resources to support skilled nursing facilities and long term care facilities."
+	},
+	{
+	    "id": 44,
+	    "title": "Mobilization of surge medical staff to address shortages in overwhelmed communities"
+	},
+	{
+	    "id": 45,
+	    "title": "Age-adjusted mortality data for Acute Respiratory Distress Syndrome (ARDS) with/without other organ failure \u2013 particularly for viral etiologies"
+	},
+	{
+	    "id": 46,
+	    "title": "Extracorporeal membrane oxygenation (ECMO) outcomes data of COVID-19 patients"
+	},
+	{
+	    "id": 47,
+	    "title": "Outcomes data for COVID-19 after mechanical ventilation adjusted for age."
+	},
+	{
+	    "id": 48,
+	    "title": "Knowledge of the frequency, manifestations, and course of extrapulmonary manifestations of COVID-19, including, but not limited to, possible cardiomyopathy and cardiac arrest."
+	},
+	{
+	    "id": 49,
+	    "title": "Application of regulatory standards (e.g., EUA, CLIA) and ability to adapt care to crisis standards of care level."
+	},
+	{
+	    "id": 50,
+	    "title": "Approaches for encouraging and facilitating the production of elastomeric respirators, which can save thousands of N95 masks."
+	},
+	{
+	    "id": 51,
+	    "title": "Best telemedicine practices, barriers and facilitators, and specific actions to remove/expand them within and across state boundaries."
+	},
+	{
+	    "id": 52,
+	    "title": "Guidance on the simple things people can do at home to take care of sick people and manage disease."
+	},
+	{
+	    "id": 53,
+	    "title": "Oral medications that might potentially work."
+	},
+	{
+	    "id": 54,
+	    "title": "Use of AI in real-time health care delivery to evaluate interventions, risk factors, and outcomes in a way that could not be done manually."
+	},
+	{
+	    "id": 55,
+	    "title": "Best practices and critical challenges and innovative solutions and technologies in hospital flow and organization, workforce protection, workforce allocation, community-based support resources, payment, and supply chain management to enhance capacity, efficiency, and outcomes."
+	},
+	{
+	    "id": 56,
+	    "title": "Efforts to define the natural history of disease to inform clinical care, public health interventions, infection prevention control, transmission, and clinical trials"
+	},
+	{
+	    "id": 57,
+	    "title": "Efforts to develop a core clinical outcome set to maximize usability of data across a range of trials"
+	},
+	{
+	    "id": 58,
+	    "title": "Efforts to determine adjunctive and supportive interventions that can improve the clinical outcomes of infected patients (e.g. steroids, high flow oxygen)"
+	}
+    ],
+    "Task6": [
+	{
+	    "id": 59,
+	    "title": "Guidance on ways to scale up NPIs in a more coordinated way (e.g., establish funding, infrastructure and authorities to support real time, authoritative (qualified participants) collaboration with all states to gain consensus on consistent guidance and to mobilize resources to geographic areas where critical shortfalls are identified) to give us time to enhance our health care delivery system capacity to respond to an increase in cases."
+	},
+	{
+	    "id": 60,
+	    "title": "Rapid design and execution of experiments to examine and compare NPIs currently being implemented. DHS Centers for Excellence could potentially be leveraged to conduct these experiments."
+	},
+	{
+	    "id": 61,
+	    "title": "Rapid assessment of the likely efficacy of school closures, travel bans, bans on mass gatherings of various sizes, and other social distancing approaches."
+	},
+	{
+	    "id": 62,
+	    "title": "Methods to control the spread in communities, barriers to compliance and how these vary among different populations.."
+	},
+	{
+	    "id": 63,
+	    "title": "Models of potential interventions to predict costs and benefits that take account of such factors as race, income, disability, age, geographic location, immigration status, housing status, employment status, and health insurance status."
+	},
+	{
+	    "id": 64,
+	    "title": "Policy changes necessary to enable the compliance of individuals with limited resources and the underserved with NPIs."
+	},
+	{
+	    "id": 65,
+	    "title": "Research on why people fail to comply with public health advice, even if they want to do so (e.g., social or financial costs may be too high)."
+	},
+	{
+	    "id": 66,
+	    "title": "Research on the economic impact of this or any pandemic. This would include identifying policy and programmatic alternatives that lessen/mitigate risks to critical government services, food distribution and supplies, access to critical household supplies, and access to health diagnoses, treatment, and needed care, regardless of ability to pay."
+	}
+    ],
+    "Task7": [
+	{
+	    "id": 67,
+	    "title": "How widespread current exposure is to be able to make immediate policy recommendations on mitigation measures. Denominators for testing and a mechanism for rapidly sharing that information, including demographics, to the extent possible. Sampling methods to determine asymptomatic disease (e.g., use of serosurveys (such as convalescent samples) and early detection of disease (e.g., use of screening of neutralizing antibodies such as ELISAs)."
+	},
+	{
+	    "id": 68,
+	    "title": "Efforts to increase capacity on existing diagnostic platforms and tap into existing surveillance platforms."
+	},
+	{
+	    "id": 69,
+	    "title": "Recruitment, support, and coordination of local expertise and capacity (public, private\u2014commercial, and non-profit, including academic), including legal, ethical, communications, and operational issues."
+	},
+	{
+	    "id": 70,
+	    "title": "National guidance and guidelines about best practices to states (e.g., how states might leverage universities and private laboratories for testing purposes, communications to public health officials and the public)."
+	},
+	{
+	    "id": 71,
+	    "title": "Development of a point-of-care test (like a rapid influenza test) and rapid bed-side tests, recognizing the tradeoffs between speed, accessibility, and accuracy."
+	},
+	{
+	    "id": 72,
+	    "title": "Rapid design and execution of targeted surveillance experiments calling for all potential testers using PCR in a defined area to start testing and report to a specific entity. These experiments could aid in collecting longitudinal samples, which are critical to understanding the impact of ad hoc local interventions (which also need to be recorded)."
+	},
+	{
+	    "id": 73,
+	    "title": "Separation of assay development issues from instruments, and the role of the private sector to help quickly migrate assays onto those devices."
+	},
+	{
+	    "id": 74,
+	    "title": "Efforts to track the evolution of the virus (i.e., genetic drift or mutations) and avoid locking into specific reagents and surveillance/detection schemes."
+	},
+	{
+	    "id": 75,
+	    "title": "Latency issues and when there is sufficient viral load to detect the pathogen, and understanding of what is needed in terms of biological and environmental sampling."
+	},
+	{
+	    "id": 76,
+	    "title": "Use of diagnostics such as host response markers (e.g., cytokines) to detect early disease or predict severe disease progression, which would be important to understanding best clinical practice and efficacy of therapeutic interventions."
+	},
+	{
+	    "id": 77,
+	    "title": "Policies and protocols for screening and testing."
+	},
+	{
+	    "id": 78,
+	    "title": "Policies to mitigate the effects on supplies associated with mass testing, including swabs and reagents."
+	},
+	{
+	    "id": 79,
+	    "title": "Technology roadmap for diagnostics."
+	},
+	{
+	    "id": 80,
+	    "title": "Barriers to developing and scaling up new diagnostic tests (e.g., market forces), how future coalition and accelerator models (e.g., Coalition for Epidemic Preparedness Innovations) could provide critical funding for diagnostics, and opportunities for a streamlined regulatory environment."
+	},
+	{
+	    "id": 81,
+	    "title": "New platforms and technology (e.g., CRISPR) to improve response times and employ more holistic approaches to COVID-19 and future diseases."
+	},
+	{
+	    "id": 82,
+	    "title": "Coupling genomics and diagnostic testing on a large scale."
+	},
+	{
+	    "id": 83,
+	    "title": "Enhance capabilities for rapid sequencing and bioinformatics to target regions of the genome that will allow specificity for a particular variant."
+	},
+	{
+	    "id": 84,
+	    "title": "Enhance capacity (people, technology, data) for sequencing with advanced analytics for unknown pathogens, and explore capabilities for distinguishing naturally-occurring pathogens from intentional."
+	},
+	{
+	    "id": 85,
+	    "title": "One Health surveillance of humans and potential sources of future spillover or ongoing exposure for this organism and future pathogens, including both evolutionary hosts (e.g., bats) and transmission hosts (e.g., heavily trafficked and farmed wildlife and domestic food and companion species), inclusive of environmental, demographic, and occupational risk factors."
+	}
+    ],
+    "Task9": [
+	{
+	    "id": 86,
+	    "title": "Methods for coordinating data-gathering with standardized nomenclature."
+	},
+	{
+	    "id": 87,
+	    "title": "Sharing response information among planners, providers, and others."
+	},
+	{
+	    "id": 88,
+	    "title": "Understanding and mitigating barriers to information-sharing."
+	},
+	{
+	    "id": 89,
+	    "title": "How to recruit, support, and coordinate local (non-Federal) expertise and capacity relevant to public health emergency response (public, private, commercial and non-profit, including academic)."
+	},
+	{
+	    "id": 90,
+	    "title": "Integration of federal/state/local public health surveillance systems."
+	},
+	{
+	    "id": 91,
+	    "title": "Value of investments in baseline public health response infrastructure preparedness"
+	},
+	{
+	    "id": 92,
+	    "title": "Modes of communicating with target high-risk populations (elderly, health care workers)."
+	},
+	{
+	    "id": 93,
+	    "title": "Risk communication and guidelines that are easy to understand and follow (include targeting at risk populations\u2019 families too)."
+	},
+	{
+	    "id": 94,
+	    "title": "Communication that indicates potential risk of disease to all population groups."
+	},
+	{
+	    "id": 95,
+	    "title": "Misunderstanding around containment and mitigation."
+	},
+	{
+	    "id": 96,
+	    "title": "Action plan to mitigate gaps and problems of inequity in the Nation\u2019s public health capability, capacity, and funding to ensure all citizens in need are supported and can access information, surveillance, and treatment."
+	},
+	{
+	    "id": 97,
+	    "title": "Measures to reach marginalized and disadvantaged populations."
+	},
+	{
+	    "id": 98,
+	    "title": "Data systems and research priorities and agendas incorporate attention to the needs and circumstances of disadvantaged populations and underrepresented minorities."
+	},
+	{
+	    "id": 99,
+	    "title": "Mitigating threats to incarcerated people from COVID-19, assuring access to information, prevention, diagnosis, and treatment."
+	},
+	{
+	    "id": 100,
+	    "title": "Understanding coverage policies (barriers and opportunities) related to testing, treatment, and care"
+	}
+    ],
+    "Task10": [
+	{
+	    "id": 101,
+	    "title": "Efforts to articulate and translate existing ethical principles and standards to salient issues in COVID-2019"
+	},
+	{
+	    "id": 102,
+	    "title": "Efforts to embed ethics across all thematic areas, engage with novel ethical issues that arise and coordinate to minimize duplication of oversight"
+	},
+	{
+	    "id": 103,
+	    "title": "Efforts to support sustained education, access, and capacity building in the area of ethics"
+	},
+	{
+	    "id": 104,
+	    "title": "Efforts to establish a team at WHO that will be integrated within multidisciplinary research and operational platforms and that will connect with existing and expanded global networks of social sciences."
+	},
+	{
+	    "id": 105,
+	    "title": "Efforts to develop qualitative assessment frameworks to systematically collect information related to local barriers and enablers for the uptake and adherence to public health measures for prevention and control. This includes the rapid identification of the secondary impacts of these measures. (e.g. use of surgical masks, modification of health seeking behaviors for SRH, school closures)"
+	},
+	{
+	    "id": 106,
+	    "title": "Efforts to identify how the burden of responding to the outbreak and implementing public health measures affects the physical and psychological health of those providing care for Covid-19 patients and identify the immediate needs that must be addressed."
+	},
+	{
+	    "id": 107,
+	    "title": "Efforts to identify the underlying drivers of fear, anxiety and stigma that fuel misinformation and rumor, particularly through social media."
+	}
+    ]
+};
+
+function fill_queries() {
+    var task_sel = document.getElementById("task");
+    var task = task_sel.options[task_sel.selectedIndex].value;
+    console.log(task);
+    // remove query select
+    var query_sel = document.getElementById("query");
+    var parent = query_sel.parentNode;
+    parent.removeChild(query_sel);
+    // create new query select
+    query_sel = document.createElement('select');
+    parent.appendChild(query_sel);
+    query_sel.setAttribute('id', 'query');
+    query_sel.setAttribute('onchange', 'load_visualization();');
+    
+    for (var i=0; i<task_queries[task].length; i++) {
+	console.log(task_queries[task][i]);
+	var query_opt = document.createElement("option");
+	query_opt.value = task_queries[task][i]['id'];
+	query_opt.text = task_queries[task][i]['title'];
+	query_sel.add(query_opt);
+    }
+}
+fill_queries();
+
+function load_visualization() {
+    var task_sel = document.getElementById("task");
+    var task = task_sel.options[task_sel.selectedIndex].value;
+    var query_sel = document.getElementById("query");
+    var query = query_sel.options[query_sel.selectedIndex].value;
+    var filepath = 'html/' + task + '_' + query + '.html';
+    console.log(filepath);
+    window.location.href = filepath;
+}
+</script>
+    </body>
+    </html>
