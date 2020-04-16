@@ -52,7 +52,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         title=doc_metadata_row.iloc[0]["title"]
         author=doc_metadata_row.iloc[0]["authors"]
         journal=doc_metadata_row.iloc[0]["journal"]
-
+        publish_date=doc_metadata_row.iloc[0]["publish_time"]
         #reranking
         q_candidate_id="q-"+str(query_id)+"-"+str(doc_id)
         if passages == True:
@@ -81,7 +81,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         if passages == True:
             doc_id= doc_id+"_"+ext_document_id
         
-        doc ={"doc_id":doc_id, "title":title, "journal":journal,"author":author, "url":url,"text":snippet,"ranking_score":ranking_score, "indri_score":indri_score, "coordinates": coords}
+        doc ={"doc_id":doc_id, "title":title, "journal":journal,"author":author,"publish_date":publish_date, "url":url,"text":snippet,"ranking_score":ranking_score, "indri_score":indri_score, "coordinates": coords}
         output.append(doc)
         #print(ext_document_id, score)
 
