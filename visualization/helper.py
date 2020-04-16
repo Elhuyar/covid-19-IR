@@ -11,11 +11,9 @@ def parse_json(fpath):
                 'id': query_j['query_id'],
                 'title': query_j['query'],
                 'task': query_j['task'],
-                'docs': [],
-                'pas': []
+                'docs': parse_entries(query_j['docs']),
+                'pas': parse_entries(query_j['pas'])
             }
-            query['docs'] = parse_entries(query_j['docs'])
-            query['pas'] = parse_entries(query_j['pas'])
             queries.append(query)
     return queries
     

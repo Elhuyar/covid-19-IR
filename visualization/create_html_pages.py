@@ -102,14 +102,11 @@ def create_plots(query, path):
     }
     """))
 
-    # print layout
+    # save layout
     save(layout([[Div(text="<h2>{}</h2>".format(query['title']), sizing_mode="stretch_width")],
                    [Div(text="<h3>Document ranking</h3>")], [doc_tab, doc_sp],
                    [Div(text="<h3>Paragraph ranking</h3>")], [par_tab, par_sp]]))
-
-    
-
-    
+   
 
 def create_scatter_plot(source, isdoc=True):
     tooltips = [
