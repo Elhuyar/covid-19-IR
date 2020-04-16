@@ -22,7 +22,7 @@ def parse_entries(entries):
     _ents = []
     for entry in entries:
         _ent = {
-            'doc_id': entry['doc_id'],
+            'doc_id': parse_doc_id(entry['doc_id']),
             'score': entry['ranking_score'],
             'title': entry['title'],
             'coord_x': entry['coordinates']['coord_x'],
@@ -36,3 +36,11 @@ def parse_entries(entries):
         _ents.append(_ent)
         _ents.sort(key=lambda p: p['score'], reverse=True)
     return _ents
+
+
+def parse_doc_id(doc_id):
+    _ind = doc_id.find('_')
+    if _ind < 0:
+        return doc_id
+    else:
+        return doc_id[:_ind]

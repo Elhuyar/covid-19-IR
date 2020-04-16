@@ -12,7 +12,7 @@ from bokeh.layouts import row, gridplot, layout
 
 BOX_WIDTH = 900
 BOX_HEIGHT = 340
-
+TEXT_MAX_LEN = 1000
 
 def main(fpath, opath):
     os.makedirs(opath, exist_ok=True)
@@ -36,7 +36,7 @@ def create_plots(query, path):
         rad = [ get_circle_size(p['score'], dscores) for p in rankd ],
         color = [ RdBu3[0] for p in rankd ],
         title = [ p['title'] for p in rankd ],
-        text = [ p['text'][:2500]+'...' if len(p['text'])>2500 else p['text'] for p in rankd ],
+        text = [ p['text'][:TEXT_MAX_LEN]+'...' if len(p['text'])>TEXT_MAX_LEN else p['text'] for p in rankd ],
         authors = [ p['authors'] for p in rankd ],
         journal = [ p['journal'] for p in rankd ],
         url = [ p['url'] for p in rankd ],
@@ -115,7 +115,7 @@ def create_scatter_plot(source, isdoc=True):
         ("Published", "@date"),
         ("Authors", "@authors"),
         ("Journal", "@journal"),
-        ("URL", "@url"),
+        ("URL", "@url")
     ]
     p = figure(x_range=(0, 1), y_range=(0, 1), plot_width=BOX_WIDTH, plot_height=BOX_HEIGHT, tools='tap,reset', tooltips=tooltips, toolbar_location="below")
     p.circle(x='x', y='y', radius='rad', color='color', source=source)
