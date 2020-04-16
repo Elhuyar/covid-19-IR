@@ -7,29 +7,49 @@ import joblib
 from nltk.corpus import stopwords
 import string
 
+import sys
 
 tokenizer = RegexpTokenizer(r'\w+') 
 
 
 #print(stopwords_english)
+passages=False
 
+in_file='metadata.csv_covid-19.kwrds.csv'
+if passages:
+    in_file='metadata.csv_covid-19.kwrds.paragraphs.csv'
 
-with open('MetadataFiltered.csv') as tsvfile:    
-    reader = csv.reader(tsvfile, delimiter='\t',quotechar='"')
-    #Dont print header
-    next(reader)
+with open(in_file) as tsvfile:    
+    reader = csv.DictReader(tsvfile, dialect='excel')
 
+    out_file = in_file+".tfidf-coords.csv"
+    of=open(out_file,"w", encoding='utf-8')
+    fieldnames=reader.fieldnames
+    fieldnames.append('tfidf_coord_x')
+    fieldnames.append('tfidf_coord_y')
+    sys.stderr.write("fields: {}\n".format(fieldnames))
+    wr=csv.DictWriter(of,fieldnames=fieldnames, dialect='excel')
+    wr.writeheader()
+    
     texts=[]
+    ids={}
     kats=[]
     titles={}
     abstracts={}
+    count=0
+    output=[]
     for row in reader:
-        
-        dokid=row[0]
-        title=row[1]
-        abstract=row[2]
+        sys.stderr.write("\r {} rows processed".format(count))
+        dokid=""
+        text=""
+        if passages :
+            dokid=row['paragraph_id']
+            text=row['text']
+        else:
+            dokid=row['cord_uid']    
+            text=row['title']+" "+row['abstract']
         ##print(dokid+"\t"+title+"\t"+abstract)        
-        text=title+" "+abstract
+        #text=title+" "+abstract
 
 
         tokens = tokenizer.tokenize(text)
@@ -45,11 +65,13 @@ with open('MetadataFiltered.csv') as tsvfile:
         #texts list
         texts.append(tokenized_text)
         #Dokids list
-        kats.append(dokid)
+        ids[dokid]=count
+        count+=1
         #Titles list
-        titles[str(dokid)]=title
+        #titles[str(dokid)]=title
         #Abs list
-        abstracts[str(dokid)]=abstract
+        #abstracts[str(dokid)]=abstract
+        output.append(row)
 
     #Generate tfidf model
     vectorizer = TfidfVectorizer(min_df=2,max_df=0.6,norm="l2",max_features=10000)
@@ -64,12 +86,22 @@ with open('MetadataFiltered.csv') as tsvfile:
     tsne_tfidf = tsne_model.fit_transform(svd_tfidf)
     #for i in vec_trans.toarray():
     #    print(i)
+    for row in output:
+        dokid='cord_uid'
+        if passages:
+            dokid='paragraph_id'
+ 
+        row['tfidf_coord_x']=tsne_tfidf[ids[row[dokid]]][0]
+        row['tfidf_coord_y']=tsne_tfidf[ids[row[dokid]]][1]
+        
+        wr.writerow(row)
+
+    of.close()
+#    joblib.dump(titles, 'covid_Titles.pkl')
+#    joblib.dump(tsne_tfidf, 'covid_Tfidf_tsne.pkl')
+#    joblib.dump(kats, 'covid_Names.pkl')
+#    joblib.dump(vecfit, 'covid_Tfidfmodel.pkl')
+#    joblib.dump(vec_trans, 'covid_Tfidf.pkl')
+#    joblib.dump(abstracts, 'covid_abs.pkl')
     
-    joblib.dump(titles, 'covid_Titles.pkl')
-    joblib.dump(tsne_tfidf, 'covid_Tfidf_tsne.pkl')
-    joblib.dump(kats, 'covid_Names.pkl')
-    joblib.dump(vecfit, 'covid_Tfidfmodel.pkl')
-    joblib.dump(vec_trans, 'covid_Tfidf.pkl')
-    joblib.dump(abstracts, 'covid_abs.pkl')
-    
-                                         
+

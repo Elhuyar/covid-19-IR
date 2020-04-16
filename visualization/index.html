@@ -1,8 +1,32 @@
     <html>
-    <head>
+      <head>
+	<title>
+	  Covid-19 IR for document and passage retrieval (by Elhuyar I+G)
+	</title>
+	<style type="text/css">
+            body, html
+            {
+                margin: 0; padding: 0; height: 100%; overflow: hidden;
+            }
+	    h4{text-align:center;margin-bottom:5px;}
+
+	    #select-form
+	    {
+	    list-style:none;
+	    width:100%;
+	    margin:0px 0px 0px -10px;
+	    }
+	    #select-form li{display:inline-block;padding:10px;}
+	    
+        </style>
     </head>
     
-    <body>
+      <body>
+	<h4>	  Covid-19 IR for document and passage retrieval (by Elhuyar I+G)</h4>
+    <div style="clear:both"></div>
+
+    <ul id="select-form">
+	  <li>
     <label for="task">Select a task:</label>
     <select id="task" onchange="fill_queries();">
     <option value="Task1">Task 1</option>
@@ -15,12 +39,16 @@
     <option value="Task9">Task 9</option>
     <option value="Task10">Task 10</option>
     </select>
-
+	  </li>
+	  <li>
     <label for="query">Select a task:</label>
     <select id="query" onchange="fill_queries();">
     </select>
-
-
+    </li>
+	  </ul>
+	    
+    <iframe id="results_iframe" width="100%" height="90%" frameborder="0"  >
+      </iframe>
 
     <script>
 
@@ -504,7 +532,7 @@ function load_visualization() {
     var query = query_sel.options[query_sel.selectedIndex].value;
     var filepath = 'html/' + task + '_' + query + '.html';
     console.log(filepath);
-    window.location.href = filepath;
+    document.getElementById("results_iframe").contentWindow.location.href = filepath;
 }
 </script>
     </body>
