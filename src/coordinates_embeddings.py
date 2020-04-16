@@ -1,75 +1,81 @@
 from sklearn.manifold import TSNE
 from sklearn.decomposition import TruncatedSVD
-from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 import csv
-from nltk.tokenize import RegexpTokenizer
 import joblib
-from nltk.corpus import stopwords
+from flair.embeddings import WordEmbeddings, FlairEmbeddings, DocumentPoolEmbeddings, Sentence, ELMoEmbeddings,BertEmbeddings,DocumentRNNEmbeddings
 import string
+import numpy as np
+from nltk.tokenize import RegexpTokenizer
+from nltk.corpus import stopwords
 
 
-tokenizer = RegexpTokenizer(r'\w+') 
+
+stopwords_flag=1
+
+tokenizer = RegexpTokenizer(r'\w+')
 
 
-#print(stopwords_english)
+flair_embedding_backward = FlairEmbeddings('pubmed-backward')
+flair_embedding_forward = FlairEmbeddings('pubmed-forward')
+Bert_embedding=BertEmbeddings()
+Glove_embedding = WordEmbeddings('glove')
+#FastText
+FastText_embedding = WordEmbeddings('en')
+#document_embeddings = DocumentPoolEmbeddings([flair_embedding_backward,flair_embedding_forward])
+#document_embeddings = DocumentPoolEmbeddings([Bert_embedding])
+#document_embeddings = DocumentPoolEmbeddings([FastText_embedding])
+document_embeddings = DocumentPoolEmbeddings([FastText_embedding])
 
 
 with open('MetadataFiltered.csv') as tsvfile:    
     reader = csv.reader(tsvfile, delimiter='\t',quotechar='"')
     #Dont print header
-    next(reader)
-
+    next(reader)    
+    A = np.array([])
     texts=[]
     kats=[]
-    titles={}
-    abstracts={}
-    for row in reader:
-        
+    for row in reader:        
         dokid=row[0]
         title=row[1]
         abstract=row[2]
-        ##print(dokid+"\t"+title+"\t"+abstract)        
         text=title+" "+abstract
+        print(str(len(text)))
 
+        #Remove stopwords?
+        if stopwords_flag:
+            tokens = tokenizer.tokenize(text)            
+            tokenak=[]
+            for tok in tokens:
+                #filter non alphanumeric tokens and stop words
+                if not (tok in string.punctuation) and not(tok.isnumeric()) and not(tok.lower() in stopwords.words('english')) and (len(tok) > 1) :
+                    tokenak.append(tok)            
+            tokenized_text=" ".join(tokenak)
+            text=tokenized_text.lower()                                                                                                                                            
+            print(text)
+        sentence = Sentence(text,use_tokenizer=True)
+        #sentence.tokens = sentence.tokens[:100]        
+        if len(sentence)>0:
+            document_embeddings.embed(sentence)
+            new_row=sentence.get_embedding().detach().numpy()        
+        else:
+             new_row=np.zeros(350)
+        if len(A)==0:
+            A=new_row
+        else:
+            A = np.vstack((A, new_row))                                                                                                                 
 
-        tokens = tokenizer.tokenize(text)
-        tokenak=[]
-        for tok in tokens:
-            #filter non alphanumeric tokens and stop words
-            if not (tok in string.punctuation) and not(tok.isnumeric()) and not(tok.lower() in stopwords.words('english')) and (len(tok) > 1) :
-                tokenak.append(tok)
-        tokenized_text=" ".join(tokenak)
-        #add tokenized document
-        #print(tokenized_text)
-        tokenized_text=tokenized_text.lower()
-        #texts list
-        texts.append(tokenized_text)
         #Dokids list
         kats.append(dokid)
-        #Titles list
-        titles[str(dokid)]=title
-        #Abs list
-        abstracts[str(dokid)]=abstract
+                
 
-    #Generate tfidf model
-    vectorizer = TfidfVectorizer(min_df=2,max_df=0.6,norm="l2",max_features=10000)
-    vecfit = vectorizer.fit(texts)
-    vec_trans = vecfit.transform(texts)
-
-    
     #Dimension reduction
     tsne_model = TSNE(n_components=2, verbose=1, random_state=0)
     svd = TruncatedSVD(n_components=50, random_state=0)
-    svd_tfidf = svd.fit_transform(vec_trans)
-    tsne_tfidf = tsne_model.fit_transform(svd_tfidf)
-    #for i in vec_trans.toarray():
-    #    print(i)
-    
-    joblib.dump(titles, 'covid_Titles.pkl')
-    joblib.dump(tsne_tfidf, 'covid_Tfidf_tsne.pkl')
-    joblib.dump(kats, 'covid_Names.pkl')
-    joblib.dump(vecfit, 'covid_Tfidfmodel.pkl')
-    joblib.dump(vec_trans, 'covid_Tfidf.pkl')
-    joblib.dump(abstracts, 'covid_abs.pkl')
-    
+    svd_A = svd.fit_transform(A)
+    tsne_A = tsne_model.fit_transform(svd_A)
+                        
+        
+    #joblib.dump(kats, 'covid_Names_bert.pkl')
+    #joblib.dump(A, 'covid_Densemodel_bert.pkl')
+
                                          
