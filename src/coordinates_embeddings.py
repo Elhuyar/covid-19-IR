@@ -28,9 +28,9 @@ document_embeddings = DocumentPoolEmbeddings([FastText_embedding])
 
 
 #print(stopwords_english)
-passages=True
+passages=False
 
-in_file='metadata.csv_covid-19.kwrds.csv'
+in_file='metadata.csv_covid-19.kwrds.csv.tfidf-coords.csv'
 if passages:
     in_file='metadata.csv_covid-19.kwrds.paragraphs.csv'
 

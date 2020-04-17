@@ -13,7 +13,7 @@ import csv
 
 from math import exp
 
-def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_scores_df, query_id, passages=False):
+def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_scores_df, query_id, coord_type, passages=False):
     output=[]
     count=0
 
@@ -58,9 +58,9 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         author=doc_metadata_row.iloc[0]["authors"]
         journal=doc_metadata_row.iloc[0]["journal"]
         publish_date=doc_metadata_row.iloc[0]["publish_time"]
-        coords = {"coord_x":doc_metadata_row.iloc[0]["tfidf_coord_x"],"coord_y":doc_metadata_row.iloc[0]["tfidf_coord_y"],}
+        coords = {"coord_x":doc_metadata_row.iloc[0][coord_type+"_coord_x"],"coord_y":doc_metadata_row.iloc[0][coord_type+"_coord_y"],}
         if passages == True:
-            coords = {"coord_x":passage_metadata_row.iloc[0]["tfidf_coord_x"],"coord_y":passage_metadata_row.iloc[0]["tfidf_coord_y"],}
+            coords = {"coord_x":passage_metadata_row.iloc[0][coord_type+"_coord_x"],"coord_y":passage_metadata_row.iloc[0][coord_type+"_coord_y"],}
 
         
         #reranking
@@ -107,9 +107,10 @@ def main(args):
     metadata_path=args.metadata_path
     index_root=args.index_path
     reranking_scores=args.reranking_scores
+    coord_type=args.coordinates_algorithm
     
-    metadata="metadata.csv_covid-19.kwrds.csv.tfidf-coords.csv"
-    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.tfidf-coords.csv"
+    metadata="metadata.csv_covid-19.kwrds.csv.all-coords.csv"
+    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.all-coords.csv"
     
     # metadata for documents
     metadata_doc=pd.read_csv(os.path.join(metadata_path,metadata))
@@ -159,7 +160,7 @@ def main(args):
 
         # document level results
         results = index_doc.query(tokenized_query, results_requested=maxdocs)
-        docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"])
+        docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type)
 
         sys.stderr.write("docs retrieved, {} \n".format(len(docs)))
 
@@ -168,7 +169,7 @@ def main(args):
         
         # document level results
         results = index_pas.query(tokenized_query, results_requested=maxdocs)
-        pas = process_results(results,index_pas,metadata_doc, metadata_pas, reranking_scores_df, row["id"], passages=True)
+        pas = process_results(results,index_pas,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type, passages=True)
 
         sys.stderr.write("passages retrieved, {} \n".format(len(docs)))
 
@@ -200,6 +201,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--index-path", type=str, default='/media/nfs/multilingual/kaggle-covid19/xabi_scripts', help="output format")
     parser.add_argument("-m", "--metadata-path", type=str, default='/media/nfs/multilingual/kaggle-covid19', help="topic defining the words in the lists (only used for creating keyword related fields)")
     parser.add_argument("-r", "--reranking-scores", type=str, default='/media/nfs/multilingual/kaggle-covid19/reranking_scores.tsv', help="file containing scores from the finetuned BERT for reranking)")
+    parser.add_argument("-c", "--coordinates-algorithm", type=str, choices=['fasttext', 'tfidf'], default='fasttext', help="Algorithm used for computing document and passage coordinates, defaults to fasttext)")
     parser.add_argument("-d", "--maxdocs", type=int, default=50, help="max number of results to return (default is 50)")
 
     args=parser.parse_args()
