@@ -29,29 +29,29 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
    
     #coordinates normalization
 
-    x_df = metadata_df[coord_type+"coord_x"]
+    x_df = metadata_df[coord_type+"_coord_x"]
     if passages :
-        x_df = metadata_pas_df[coord_type+"coord_x"] 
+        x_df = metadata_pas_df[coord_type+"_coord_x"] 
 
     min_coord_x=1
     max_coord_x=0
     for i,x in x_df.iteritems():
-        if exp(x) <  min_coord_x:
-             min_coord_x=exp(x)
-        if exp(score) > max_coord_x:
-            max_coord_x=exp(x)
+        if x <  min_coord_x:
+            min_coord_x=x
+        if x > max_coord_x:
+            max_coord_x=x
             
-    y_df = metadata_df[coord_type+"coord_y"]
+    y_df = metadata_df[coord_type+"_coord_y"]
     if passages :
-        y_df = metadata_pas_df[coord_type+"coord_y"] 
+        y_df = metadata_pas_df[coord_type+"_coord_y"] 
 
     min_coord_y=1
     max_coord_y=0
     for i,y in y_df.iteritems():
-        if exp(y) <  min_coord_y:
-             min_coord_y=exp(y)
-        if exp(score) > max_coord_y:
-            max_coord_y=exp(y)
+        if y <  min_coord_y:
+            min_coord_y=y
+        if y > max_coord_y:
+            max_coord_y=y
     
             
     #loop throgout result and prepare output
@@ -87,11 +87,11 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         journal=doc_metadata_row.iloc[0]["journal"]
         publish_date=doc_metadata_row.iloc[0]["publish_time"]
         ##normalized coordinates
-        coord_x = (exp(doc_metadata_row.iloc[0][coord_type+"_coord_x"])-min_coord_x)/(max_coord_x-min_coord_x)
-        coord_y = (exp(doc_metadata_row.iloc[0][coord_type+"_coord_y"])-min_coord_y)/(max_coord_y-min_coord_y) 
+        coord_x = (doc_metadata_row.iloc[0][coord_type+"_coord_x"]-min_coord_x)/(max_coord_x-min_coord_x)
+        coord_y = (doc_metadata_row.iloc[0][coord_type+"_coord_y"]-min_coord_y)/(max_coord_y-min_coord_y) 
         if passages == True:
-            coord_x = (exp(passage_metadata_row.iloc[0][coord_type+"_coord_x"])-min_coord_x)/(max_coord_x-min_coord_x)
-            coord_y = (exp(passage_metadata_row.iloc[0][coord_type+"_coord_y"])-min_coord_y)/(max_coord_y-min_coord_y) 
+            coord_x = (passage_metadata_row.iloc[0][coord_type+"_coord_x"]-min_coord_x)/(max_coord_x-min_coord_x)
+            coord_y = (passage_metadata_row.iloc[0][coord_type+"_coord_y"]-min_coord_y)/(max_coord_y-min_coord_y) 
         coords = {"coord_x":coord_x,"coord_y":coord_y}
         
         
