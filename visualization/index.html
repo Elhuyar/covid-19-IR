@@ -44,6 +44,13 @@
     <label for="query">Select a task:</label>
     <select id="query" onchange="fill_queries();">
     </select>
+	  </li>
+	  <li>
+    <label for="visualization">visualization type:</label>
+    <select id="visualization">
+      <option value="fasttext" selected="selected">FastText</option>
+      <option value="tfidf">Tf-idf</option>
+    </select>
     </li>
 	  </ul>
 	    
@@ -530,7 +537,9 @@ function load_visualization() {
     var task = task_sel.options[task_sel.selectedIndex].value;
     var query_sel = document.getElementById("query");
     var query = query_sel.options[query_sel.selectedIndex].value;
-    var filepath = 'html/' + task + '_' + query + '.html';
+    var vis_sel = document.getElementById("visualization");
+    var vis = vis_sel.options[vis_sel.selectedIndex].value;
+    var filepath = 'html_'+vis+'/' + task + '_' + query + '.html';
     console.log(filepath);
     document.getElementById("results_iframe").contentWindow.location.href = filepath;
 }

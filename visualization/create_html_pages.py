@@ -117,7 +117,9 @@ def create_scatter_plot(source, isdoc=True):
         ("Journal", "@journal"),
         ("URL", "@url")
     ]
+    
     p = figure(x_range=(0, 1), y_range=(0, 1), plot_width=BOX_WIDTH, plot_height=BOX_HEIGHT, tools='tap,reset', tooltips=tooltips, toolbar_location="below")
+    #p = figure(plot_width=BOX_WIDTH, plot_height=BOX_HEIGHT, tools='tap,reset', tooltips=tooltips, toolbar_location="below")
     p.circle(x='x', y='y', radius='rad', color='color', source=source)
     
     labels = LabelSet(x='x', y='y', text='title', level='glyph', text_font_size="10pt",
