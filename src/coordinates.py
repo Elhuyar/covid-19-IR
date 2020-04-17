@@ -13,7 +13,7 @@ tokenizer = RegexpTokenizer(r'\w+')
 
 
 #print(stopwords_english)
-passages=False
+passages=True
 
 in_file='metadata.csv_covid-19.kwrds.csv'
 if passages:
