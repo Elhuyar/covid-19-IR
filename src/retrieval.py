@@ -34,6 +34,10 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         doc_id = ext_document_id
         sys.stderr.write("\r processed {} documents {} ".format(count, ext_document_id))
         snippet=""
+        coords = {"coord_x":random.uniform(0, 1),"coord_y":random.uniform(0, 1)}
+        
+
+        
         if passages == True:
             passage_metadata_row = metadata_pas_df[metadata_pas_df["paragraph_id"]==int(ext_document_id)]
             if passage_metadata_row.empty:
@@ -42,6 +46,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
 
             doc_id=passage_metadata_row.iloc[0]["cord_uid"]
             snippet=passage_metadata_row.iloc[0]["text"]
+
 
         # common fields for documents and passages
         doc_metadata_row = metadata_df[metadata_df["cord_uid"]==doc_id]
@@ -53,6 +58,11 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         author=doc_metadata_row.iloc[0]["authors"]
         journal=doc_metadata_row.iloc[0]["journal"]
         publish_date=doc_metadata_row.iloc[0]["publish_time"]
+        coords = {"coord_x":doc_metadata_row.iloc[0]["tfidf_coord_x"],"coord_y":doc_metadata_row.iloc[0]["tfidf_coord_y"],}
+        if passages == True:
+            coords = {"coord_x":passage_metadata_row.iloc[0]["tfidf_coord_x"],"coord_y":passage_metadata_row.iloc[0]["tfidf_coord_y"],}
+
+        
         #reranking
         q_candidate_id="q-"+str(query_id)+"-"+str(doc_id)
         if passages == True:
@@ -66,13 +76,11 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
             
         indri_score=(exp(score)-min)/(max-min)  # normalized indri score
 
-        if bert_score != None:
+        if passages == True and bert_score != None:
             ranking_score=0.8*indri_score+0.2*bert_score
         else:
             ranking_score=indri_score
             
-        coords = {"coord_x":random.uniform(0, 1),"coord_y":random.uniform(0, 1)}
-    
         if passages == False:
             snippet=doc_metadata_row.iloc[0]["abstract"]
     
@@ -100,8 +108,8 @@ def main(args):
     index_root=args.index_path
     reranking_scores=args.reranking_scores
     
-    metadata="metadata.csv_covid-19.kwrds.csv"
-    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv"
+    metadata="metadata.csv_covid-19.kwrds.csv.tfidf-coords.csv"
+    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.tfidf-coords.csv"
     
     # metadata for documents
     metadata_doc=pd.read_csv(os.path.join(metadata_path,metadata))
