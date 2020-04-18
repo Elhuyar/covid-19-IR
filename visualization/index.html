@@ -16,7 +16,7 @@
 	    width:100%;
 	    margin:0px 0px 0px -10px;
 	    }
-	    #select-form li{display:inline-block;padding:10px;}
+	    #select-form li{display:inline;padding:10px;}
 	    
         </style>
     </head>
@@ -41,12 +41,12 @@
     </select>
 	  </li>
 	  <li>
-    <label for="query">Select a task:</label>
+    <label for="query">Select a query:</label>
     <select id="query" onchange="fill_queries();">
     </select>
 	  </li>
 	  <li>
-    <label for="visualization">visualization type:</label>
+    <label for="visualization">Visualization type:</label>
     <select id="visualization" onchange="load_visualization();">
       <option value="fasttext" selected="selected">FastText</option>
       <option value="tfidf">Tf-idf</option>
