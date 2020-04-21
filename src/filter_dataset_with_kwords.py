@@ -23,11 +23,12 @@ def main(args):
     outformat=args.outformat
     maxdocs=args.maxdocs
     topic=args.topic
+    idsFile=args.ids
 
     
     splitter = SentenceSplitter(language='en',non_breaking_prefix_file='custom-prefixes-sent-splitter.txt')
     
-    inFolder= "data"
+    inFolder= "data-20200417"
     outFolder = "filtered"
     out_file = corpus.name+"_"+topicTermFile.name+"."+outformat
     out_file_par = corpus.name+"_"+topicTermFile.name+".paragraphs."+outformat
@@ -55,6 +56,15 @@ def main(args):
 
     sys.stderr.write("Loaded keywords to select docs - {}\n".format(len(words)))
 
+    cord_uids=collections.OrderedDict()
+    for line in idsFile:
+        if line.startswith("#") or re.match("^\s*$",line):
+            continue
+        cid=line.strip().split("\t")[0]
+        cord_uids[cid]=1
+    idsFile.close()
+    
+    sys.stderr.write("Loaded id provided by trec - {} \n".format(len(cord_uids)))#,",".join(cord_uids.keys())))
     
     output=[]
     processed={}
@@ -90,23 +100,35 @@ def main(args):
     docs_found=0
     file_problems=0
     paragraph_id=0
+    no_pmc_file=0
+    in_trec=0
     for row in metadata:
         proces_count+=1
+        if "cord_uid" not in row or row["cord_uid"] not in cord_uids:
+            sys.stderr.write("\r document {} skipped, not in the trec list".format(row["cord_uid"]))
+            continue
+        elif row["cord_uid"] in cord_uids:
+            in_trec+=1
+        
         #if proces_count > 10:
         #    sys.exit(100)
-        sys.stderr.write("\r {a:8d} documents processed".format(a=proces_count))
+        sys.stderr.write("\r {a:8d} documents processed, {b:8d} in trec list".format(a=proces_count,b=in_trec))
         #sys.stderr.write("\n document sha {} and pmcid {} --> \n row {}\n".format(row["sha"],row["pmcid"],row))
         #we give preference to sha over pmc
         file_id=row["pmcid"]
         file_type="pmc_json"
-        if row["pmcid"] == None or row["pmcid"] == '':
+        if row["pmcid"] == None or row["pmcid"] == '' or not os.path.isfile(os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,row["pmcid"]+".xml.json")):
+            if not os.path.isfile(os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,row["pmcid"]+".xml.json")):
+                no_pmc_file+=1
+                sys.stderr.write("WARN: document {} has pmcid {}, but no file with that code is present, let's try with sha (pdf) \n".format(row["cord_uid"],row["pmcid"]))
+
             file_id=row["sha"]
             file_type="pdf_json"
             #sys.stderr.write("WARN: document {} has no sha {}\n".format(row["cord_uid"],row["sha"]))
-
+            
             if row["sha"] == None or row["sha"] == '':
                 skipped+=1
-                sys.stderr.write("WARN: document {} has neither sha nor pmcid, skipping ({})\n".format(row["cord_uid"],skipped))
+                sys.stderr.write("WARN: document {} has neither sha nor pmcid valid codes, skipping ({})\n".format(row["cord_uid"],skipped))
                 continue
                              
         if file_id in processed:
@@ -237,7 +259,7 @@ def main(args):
     of.close()
     of_par.close()
     of_sent.close()
-    sys.stderr.write("\n =========================== \n SUMMARY: \n \t processed: {} \n \t keywords found in: {} \n \t skipped without code: {} \n \t file access errors: {} \n================== \n".format(proces_count,docs_found,skipped,file_problems))
+    sys.stderr.write("\n =========================== \n SUMMARY: \n \t processed: {} \n \t keywords found in: {} \n \t skipped without code: {} \n \t file access errors: {} \n \t pmc code but not file: {} \n \t valid in trec: {} \n================== \n".format(proces_count,docs_found,skipped,file_problems,no_pmc_file, in_trec))
 
     
 
@@ -255,6 +277,7 @@ if __name__ == "__main__":
 
     parser.add_argument("corpus", type=argparse.FileType('r'), help="Corpus in csv format we want to filter")    
     parser.add_argument("-w", "--words", type=argparse.FileType('r'), help="list of words to look for in the dataset")
+    parser.add_argument("-i", "--ids", type=argparse.FileType('r'), help="list of ids provided by trec organizers for each round")
     parser.add_argument("-f", "--outformat", choices=['json','csv'], default='csv', help="output format")
     parser.add_argument("-m", "--maxdocs", type=int, default='0', help="max number of documents to return")
     parser.add_argument("-t", "--topic", type=str, default='unknown', help="topic defining the words in the lists (only used for creating keyword related fields)")
