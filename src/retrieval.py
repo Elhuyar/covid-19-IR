@@ -28,7 +28,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
 
    
     #coordinates normalization
-
+    """
     x_df = metadata_df[coord_type+"_coord_x"]
     if passages :
         x_df = metadata_pas_df[coord_type+"_coord_x"] 
@@ -52,7 +52,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
             min_coord_y=y
         if y > max_coord_y:
             max_coord_y=y
-    
+    """
             
     #loop throgout result and prepare output
     for int_document_id, score in indri_results:
@@ -60,7 +60,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         ext_document_id, _ = index.document(int_document_id)
 
         doc_id = ext_document_id
-        sys.stderr.write("\r processed {} documents {} ".format(count, ext_document_id))
+        sys.stderr.write("\r processed {} documents/passages {} ".format(count, ext_document_id))
         snippet=""
         coords = {"coord_x":random.uniform(0, 1),"coord_y":random.uniform(0, 1)}
         
@@ -86,13 +86,16 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         author=doc_metadata_row.iloc[0]["authors"]
         journal=doc_metadata_row.iloc[0]["journal"]
         publish_date=doc_metadata_row.iloc[0]["publish_time"]
-        ##normalized coordinates
-        coord_x = (doc_metadata_row.iloc[0][coord_type+"_coord_x"]-min_coord_x)/(max_coord_x-min_coord_x)
-        coord_y = (doc_metadata_row.iloc[0][coord_type+"_coord_y"]-min_coord_y)/(max_coord_y-min_coord_y) 
-        if passages == True:
-            coord_x = (passage_metadata_row.iloc[0][coord_type+"_coord_x"]-min_coord_x)/(max_coord_x-min_coord_x)
-            coord_y = (passage_metadata_row.iloc[0][coord_type+"_coord_y"]-min_coord_y)/(max_coord_y-min_coord_y) 
-        coords = {"coord_x":coord_x,"coord_y":coord_y}
+
+        ##normalized coordinates. If there is no coordinates information coordinates are left random
+        
+        if coord_type+"_coord_x" in doc_metadata_row and coord_type+"_coord_x" in passage_metadata_row:
+            coord_x = (doc_metadata_row.iloc[0][coord_type+"_coord_x"]-min_coord_x)/(max_coord_x-min_coord_x)
+            coord_y = (doc_metadata_row.iloc[0][coord_type+"_coord_y"]-min_coord_y)/(max_coord_y-min_coord_y) 
+            if passages == True:
+                coord_x = (passage_metadata_row.iloc[0][coord_type+"_coord_x"]-min_coord_x)/(max_coord_x-min_coord_x)
+                coord_y = (passage_metadata_row.iloc[0][coord_type+"_coord_y"]-min_coord_y)/(max_coord_y-min_coord_y) 
+            coords = {"coord_x":coord_x,"coord_y":coord_y}
         
         
         #reranking
@@ -121,7 +124,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         if passages == True:
             doc_id= doc_id+"_"+ext_document_id
         
-        doc ={"doc_id":doc_id, "title":title, "journal":journal,"author":author,"publish_date":publish_date, "url":url,"text":snippet,"ranking_score":ranking_score, "indri_score":indri_score, "coordinates": coords}
+        doc ={"doc_id":doc_id, "title":title, "journal":journal,"author":author,"publish_date":publish_date, "url":url,"text":snippet,"ranking_score":ranking_score, "indri_score":indri_score, "rank":int_document_id, "coordinates": coords}
         output.append(doc)
         #print(ext_document_id, score)
 
@@ -141,8 +144,10 @@ def main(args):
     reranking_scores=args.reranking_scores
     coord_type=args.coordinates_algorithm
     
-    metadata="metadata.csv_covid-19.kwrds.csv.all-coords.csv"
-    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.all-coords.csv"
+    #metadata="metadata.csv_covid-19.kwrds.csv.all-coords.csv"
+    #passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.all-coords.csv"
+    metadata="metadata.csv_covid-19.kwrds.csv"
+    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv"
     
     # metadata for documents
     metadata_doc=pd.read_csv(os.path.join(metadata_path,metadata))
@@ -173,10 +178,10 @@ def main(args):
     #fieldnames=["doc_id","source","author", "url","title",]
 
     # indri
-    index_doc_path=os.path.join(index_root,'BildumaIndex')
-    index_pas_path=os.path.join(index_root,'BildumaParIndex')
+    #index_doc_path=os.path.join(index_root,'BildumaIndex')
+    index_pas_path=os.path.join(index_root,'BildumaTRECParIndex')
 
-    index_doc = pyndri.Index(index_doc_path)
+    #index_doc = pyndri.Index(index_doc_path)
     index_pas = pyndri.Index(index_pas_path)
 
     #query tokenizer
@@ -184,37 +189,68 @@ def main(args):
 
     queries_df = pd.read_csv(queries,dialect='excel-tab')
     for index, row in queries_df.iterrows(): 
-        querylc = row['query'].lower()
-
+        #querylc = row['query'].lower()
+        querylc = row['question'].lower()+" "+row['query'].lower()+" "+row['narrative'].lower()
+        
         sys.stderr.write("current query: {} \n.".format(querylc))
         tokens = tokenizer.tokenize(querylc)        
         tokenized_query=" ".join(tokens)
 
         # document level results
-        results = index_doc.query(tokenized_query, results_requested=maxdocs)
-        docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type)
+        #results = index_doc.query(tokenized_query, results_requested=maxdocs)
+        #docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type)
 
-        sys.stderr.write("docs retrieved, {} \n".format(len(docs)))
+        #sys.stderr.write("docs retrieved, {} \n".format(len(docs)))
 
-        for d in docs:
-            wr.writerow({"question":row["query"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0}) 
+        #for d in docs:
+        #    wr.writerow({"question":row["query"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0}) 
         
         # document level results
         results = index_pas.query(tokenized_query, results_requested=maxdocs)
         pas = process_results(results,index_pas,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type, passages=True)
 
-        sys.stderr.write("passages retrieved, {} \n".format(len(docs)))
+        pas_df = pd.DataFrame(pas)
 
-        for p in pas:
-            wr.writerow({"question":row["query"],"question_id":row["id"],"answer":p["text"],"answer_id":p["doc_id"],"label":0}) 
+        pas_sorted = pas_df.sort_values("ranking_score",ascending=False)
         
-        query_json={"query_id":row['id'], "task": row['task'], "query":row['query'], "docs":docs,"pas":pas}
-        output.append(query_json)
+        sys.stderr.write("passages retrieved, {} \n".format(len(pas)))
+
+        run_indri="elhuyar_indri"
+        run_rerank="elhuyar_rRnk_cbert"
+        
+        doc_dict={}
+        rank=1
+        for index, p in pas_sorted.iterrows():
+            #wr.writerow({"question":row["query"]+" "+row["narrative"],"question_id":row["id"],"answer":p["text"],"answer_id":p["doc_id"],"label":0})
+            
+            #sys.stderr.write(" {} - {} {} \n".format(p["doc_id"]))
+            
+            #ranking has already 1000 documents
+            if rank > 1000:
+                break
+            
+            question_id=row["id"]
+            doc_pas_id = str(p["doc_id"])
+            doc_id = doc_pas_id.split("_")[0]
+
+            # already found a more relevant passage of the same document
+            if doc_id in doc_dict:
+                continue
+            
+            doc_dict[doc_id]=1
+            print("{} Q0 {} {} {} {}".format(row['id'],doc_id, rank, p["ranking_score"],run_indri))
+            sys.stderr.write("{} Q0 {} {} {} {}\n".format(row['id'],doc_id, rank, p["indri_score"],run_rerank))
+            rank+=1
+
+        #query_json={"query_id":row['id'], "task": row['task'], "query":row['query'], "docs":docs,"pas":pas}
+
+        #query_json={"query_id":row['id'], "task": "trec-round-1", "query":row['query'], "pas":pas}
+        #output.append(query_json)
 
 
 
     of.close()    
-    print(json.dumps(output, indent=4, sort_keys=True))
+    #print(json.dumps(output, indent=4, sort_keys=True))
 
 
 
