@@ -216,7 +216,7 @@ def main(args):
         sys.stderr.write("passages retrieved, {} \n".format(len(pas)))
 
         run_indri="elhuyar_indri"
-        run_rerank="elhuyar_rRnk_cbert"
+        run_rerank="elhuyar_rRnk_sbert"
         
         doc_dict={}
         rank=1
@@ -238,8 +238,8 @@ def main(args):
                 continue
             
             doc_dict[doc_id]=1
-            print("{} Q0 {} {} {} {}".format(row['id'],doc_id, rank, p["ranking_score"],run_indri))
-            sys.stderr.write("{} Q0 {} {} {} {}\n".format(row['id'],doc_id, rank, p["indri_score"],run_rerank))
+            print("{} Q0 {} {} {} {}".format(row['id'],doc_id, rank, p["ranking_score"],run_rerank))
+            sys.stderr.write("{} Q0 {} {} {} {}\n".format(row['id'],doc_id, rank, p["ranking_score"],run_rerank))
             rank+=1
 
         #query_json={"query_id":row['id'], "task": row['task'], "query":row['query'], "docs":docs,"pas":pas}
