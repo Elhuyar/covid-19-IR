@@ -24,9 +24,9 @@ def main(args):
     maxdocs=args.maxdocs
     topic=args.topic
     idsFile=args.ids
-
+    splitter_prefixes=args.prefixes
     
-    splitter = SentenceSplitter(language='en',non_breaking_prefix_file='custom-prefixes-sent-splitter.txt')
+    splitter = SentenceSplitter(language='en',non_breaking_prefix_file=splitter_prefixes)
     
     inFolder= "data-20200417"
     outFolder = "filtered"
@@ -142,10 +142,35 @@ def main(args):
         if file_type == "pmc_json":
             extension=".xml.json"
             
-        file_ids=file_id.split("; ")
+        file_ids=set(file_id.split("; "))
         full_text = ""
         paragraphs=[]
         sentences=[]
+
+        ## NOTE after finding incosistencies between metadata file and corresponding pdf/pmc files (empty title/abstracts), title and abstract are taken directly from the metadata file.
+        title_metadata=row["title"]
+        if title_metadata != "":
+            full_text = title_metadata
+            #paragraphs
+            paragraphs.append({"cord_uid":row["cord_uid"],"paper_id":row["cord_uid"]+"_metadata","paragraph_id":paragraph_id,"paragraph_type":"title","text":title_metadata})
+            #sentences NOTE that titles are not sentence splitted.
+            sentences.append({"cord_uid":row["cord_uid"],"paper_id":row["cord_uid"]+"_metadata","paragraph_id":paragraph_id,"paragraph_type":"title","sentence_id":1,"text":title_metadata})
+            paragraph_id+=1
+            
+        abstract_metadata=row["abstract"]
+        if abstract_metadata != "":
+           full_text = full_text + "\n" + abstract_metadata
+           #paragraphs
+           paragraphs.append({"cord_uid":row["cord_uid"],"paper_id":row["cord_uid"]+"_metadata","paragraph_id":paragraph_id,"paragraph_type":"abstract","text":abstract_metadata})
+           #sentences
+           sentence_id=1
+           sentence_split=splitter.split(abstract_metadata)
+           for s in sentence_split:
+               sentences.append({"cord_uid":row["cord_uid"],"paper_id":row["cord_uid"]+"_metadata","paragraph_id":paragraph_id,"paragraph_type":"abstract","sentence_id":sentence_id,"text":s})
+               sentence_id+=1
+               
+           paragraph_id+=1
+           
         for i in file_ids:
             in_file=os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,i+extension)
             #out_file=os.path.join(outFolder,row["full_text_file"],row["full_text_file"],file_type,file_id+extension)
@@ -159,17 +184,19 @@ def main(args):
                 file_problems+=1
                 sys.stderr.write("WARN: document with file_id {} (sha or pmcid) has problems with accessing the files, skipping\n".format(file_id))
                 continue
-        
-            if "metadata" in article and "title" in  article["metadata"]:
+
+            #TITLE
+            if title_metadata == "" and "metadata" in article and "title" in  article["metadata"]:
                 if article["metadata"]["title"] != "":
                     full_text = full_text + "\n" + article["metadata"]["title"]
                     #paragraphs
                     paragraphs.append({"cord_uid":row["cord_uid"],"paper_id":i,"paragraph_id":paragraph_id,"paragraph_type":"title","text":article["metadata"]["title"]})
-                    paragraph_id+=1
                     #sentences NOTE that titles are not sentence splitted.
                     sentences.append({"cord_uid":row["cord_uid"],"paper_id":i,"paragraph_id":paragraph_id,"paragraph_type":"title","sentence_id":1,"text":article["metadata"]["title"]})
-                                            
-            if "abstract" in article and len(article["abstract"]) > 0:
+                    paragraph_id+=1
+                    
+            #ABSTRACT                                
+            if abstract_metadata == "" and "abstract" in article and len(article["abstract"]) > 0:
                 for abstract_node in article["abstract"]:
                     if abstract_node["text"] == None or abstract_node["text"] == "":
                         continue
@@ -177,14 +204,16 @@ def main(args):
                     full_text = full_text + "\n" + abstract_node["text"]
                     #paragraphs
                     paragraphs.append({"cord_uid":row["cord_uid"],"paper_id":i,"paragraph_id":paragraph_id,"paragraph_type":"abstract","text":abstract_node["text"]})
-                    paragraph_id+=1
                     #sentences
                     sentence_id=1
                     sentence_split=splitter.split(abstract_node["text"])
                     for s in sentence_split:
                         sentences.append({"cord_uid":row["cord_uid"],"paper_id":i,"paragraph_id":paragraph_id,"paragraph_type":"abstract","sentence_id":sentence_id,"text":s})
                         sentence_id+=1
-                    
+                        
+                    paragraph_id+=1
+                        
+            #BODY TEXT        
             for paragraph in article["body_text"]:
                 if paragraph["text"] == None or paragraph["text"] == "":
                     continue
@@ -192,13 +221,13 @@ def main(args):
                 full_text=full_text + "\n" + paragraph["text"]
                 #paragraphs
                 paragraphs.append({"cord_uid":row["cord_uid"],"paper_id":i,"paragraph_id":paragraph_id,"paragraph_type":"body","text":paragraph["text"].replace("\n"," ")})
-                paragraph_id+=1
                 #sentences
                 sentence_id=1
                 sentence_split=splitter.split(paragraph["text"])
                 for s in sentence_split:
                     sentences.append({"cord_uid":row["cord_uid"],"paper_id":i,"paragraph_id":paragraph_id,"paragraph_type":"body","sentence_id":sentence_id,"text":s})
                     sentence_id+=1
+                paragraph_id+=1
                     
         full_text = full_text.replace("“","\"").replace("&rdquor;","\"")#.replace(u"\u00AD", "")
 
@@ -208,10 +237,14 @@ def main(args):
 
         kwords_found= []
         full_textlc = full_text.lower()
-        for w,ptrn in words.items():
-            if re.search(ptrn,full_textlc):
-                kwords_found.append(w)
-                #break # for the moment all keywords are look for, 
+        ## IF there is no filtering keyword, accept every single document, adding "covid-19" as keyword
+        if len(words)<1:
+            kwords_found.append("covid-19")
+        else:
+            for w,ptrn in words.items():
+                if re.search(ptrn,full_textlc):
+                    kwords_found.append(w)
+                    #break # for the moment all keywords are look for, 
                              
         #article["metadata"]["keywords_elh"] = kwords_found
         #sys.stderr.write("current document: {} keywords found! \n".format(row))
@@ -272,12 +305,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description='',
-        epilog="type python3 -u filterByKeywords.py -h for help",
+        epilog="type python3 -u filter_dataset_with_kwords.py -h for help",
         prog='dl-talaia.py' )
 
     parser.add_argument("corpus", type=argparse.FileType('r'), help="Corpus in csv format we want to filter")    
     parser.add_argument("-w", "--words", type=argparse.FileType('r'), help="list of words to look for in the dataset")
     parser.add_argument("-i", "--ids", type=argparse.FileType('r'), help="list of ids provided by trec organizers for each round")
+    parser.add_argument("-p", "--prefixes", type=str, default='custom-prefixes-sent-splitter.txt', help="path to a file containing custom non breaking prefixes for the sentence splitter.")
     parser.add_argument("-f", "--outformat", choices=['json','csv'], default='csv', help="output format")
     parser.add_argument("-m", "--maxdocs", type=int, default='0', help="max number of documents to return")
     parser.add_argument("-t", "--topic", type=str, default='unknown', help="topic defining the words in the lists (only used for creating keyword related fields)")
