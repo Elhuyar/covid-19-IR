@@ -112,7 +112,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         indri_score=(exp(score)-min)/(max-min)  # normalized indri score
 
         if passages == True and bert_score != None:
-            ranking_score=0.8*indri_score+0.2*bert_score
+            ranking_score=0.2*indri_score+0.8*bert_score
         else:
             ranking_score=indri_score
             
@@ -146,8 +146,8 @@ def main(args):
     
     #metadata="metadata.csv_covid-19.kwrds.csv.all-coords.csv"
     #passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.all-coords.csv"
-    metadata="metadata.csv_covid-19.kwrds.csv"
-    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv"
+    metadata="metadata.csv_covid-19.kwrds.csv.old"
+    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.old"
     
     # metadata for documents
     metadata_doc=pd.read_csv(os.path.join(metadata_path,metadata))
@@ -216,7 +216,7 @@ def main(args):
         sys.stderr.write("passages retrieved, {} \n".format(len(pas)))
 
         run_indri="elhuyar_indri"
-        run_rerank="elhuyar_rRnk_sbert"
+        run_rerank="elhuyar_rRnk_cbert"
         
         doc_dict={}
         rank=1
@@ -266,8 +266,8 @@ if __name__ == "__main__":
         prog='retrieval.py' )
 
     parser.add_argument("queries", type=argparse.FileType('r'), help="File containing queries for document or or passage retrieval. tsv format, including one column called 'query'.")  
-    parser.add_argument("-i", "--index-path", type=str, default='/media/nfs/multilingual/kaggle-covid19/xabi_scripts', help="output format")
-    parser.add_argument("-m", "--metadata-path", type=str, default='/media/nfs/multilingual/kaggle-covid19', help="topic defining the words in the lists (only used for creating keyword related fields)")
+    parser.add_argument("-i", "--index-path", type=str, default='/media/nfs/multilingual/kaggle-covid19/xabi_scripts', help="path to the folder containing Indri indexes")
+    parser.add_argument("-m", "--metadata-path", type=str, default='/media/nfs/multilingual/kaggle-covid19', help="path to the folder containing metadata files")
     parser.add_argument("-r", "--reranking-scores", type=str, default='/media/nfs/multilingual/kaggle-covid19/reranking_scores.tsv', help="file containing scores from the finetuned BERT for reranking)")
     parser.add_argument("-c", "--coordinates-algorithm", type=str, choices=['fasttext', 'tfidf'], default='fasttext', help="Algorithm used for computing document and passage coordinates, defaults to fasttext)")
     parser.add_argument("-d", "--maxdocs", type=int, default=50, help="max number of results to return (default is 50)")
