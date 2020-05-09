@@ -143,6 +143,7 @@ def main(args):
     index_root=args.index_path
     reranking_scores=args.reranking_scores
     coord_type=args.coordinates_algorithm
+    krovetz_stem=args.krovetz_stem
     
     #metadata="metadata.csv_covid-19.kwrds.csv.all-coords.csv"
     #passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.all-coords.csv"
@@ -184,17 +185,31 @@ def main(args):
     #index_doc = pyndri.Index(index_doc_path)
     index_pas = pyndri.Index(index_pas_path)
 
+    # Constructs a QueryEnvironment that uses a
+    # language model with Dirichlet smoothing.
+    lm_query_env = pyndri.QueryEnvironment(
+        index_pas , rules=('method:dirichlet',))
+    #print(lm_query_env.query('hello world'))
+    prf_query_env = pyndri.PRFQueryEnvironment(lm_query_env,fb_docs=20, fb_terms=10)
+    #print(prf_query_env.query('hello world'))
+    
+    
     #query tokenizer
     tokenizer = RegexpTokenizer(r'\w+')
+    #tokenizer = RegexpTokenizer(r'[^ ]+'))
 
     queries_df = pd.read_csv(queries,dialect='excel-tab')
     for index, row in queries_df.iterrows(): 
         #querylc = row['query'].lower()
-        querylc = row['question'].lower()+" "+row['query'].lower()+" "+row['narrative'].lower()
+        querylc = row['question'].lower()+" "+row['query'].lower() #+" "+row['narrative'].lower()
         
         sys.stderr.write("current query: {} \n.".format(querylc))
-        tokens = tokenizer.tokenize(querylc)        
+        tokens = tokenizer.tokenize(querylc)
         tokenized_query=" ".join(tokens)
+        #Lemmatization and stopwords removal
+        if krovetz_stem:
+            tokenized_query=" ".join([pyndri.krovetz_stem(t) for t in tokens if not t in stopwords])
+            sys.stderr.write("tokenized and stemmed query: {} \n".format(tokenized_query))
 
         # document level results
         #results = index_doc.query(tokenized_query, results_requested=maxdocs)
@@ -206,7 +221,7 @@ def main(args):
         #    wr.writerow({"question":row["query"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0}) 
         
         # document level results
-        results = index_pas.query(tokenized_query, results_requested=maxdocs)
+        results = prf_query_env.query(tokenized_query, results_requested=maxdocs)
         pas = process_results(results,index_pas,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type, passages=True)
 
         pas_df = pd.DataFrame(pas)
@@ -271,6 +286,7 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--reranking-scores", type=str, default='/media/nfs/multilingual/kaggle-covid19/reranking_scores.tsv', help="file containing scores from the finetuned BERT for reranking)")
     parser.add_argument("-c", "--coordinates-algorithm", type=str, choices=['fasttext', 'tfidf'], default='fasttext', help="Algorithm used for computing document and passage coordinates, defaults to fasttext)")
     parser.add_argument("-d", "--maxdocs", type=int, default=50, help="max number of results to return (default is 50)")
+    parser.add_argument("-k", "--krovetz_stem", action='store_true', help="Apply Krovetz stemmer to queries.")
 
     args=parser.parse_args()
 

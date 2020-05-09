@@ -102,6 +102,7 @@ def main(args):
     paragraph_id=0
     no_pmc_file=0
     in_trec=0
+    duplicated=0
     for row in metadata:
         proces_count+=1
         if "cord_uid" not in row or row["cord_uid"] not in cord_uids:
@@ -128,11 +129,12 @@ def main(args):
             
             if row["sha"] == None or row["sha"] == '':
                 skipped+=1
-                sys.stderr.write("WARN: document {} has neither sha nor pmcid valid codes, skipping ({})\n".format(row["cord_uid"],skipped))
-                continue
+                sys.stderr.write("WARN: document {} has neither sha nor pmcid valid codes, only title and abstract will be used for keyword search ({})\n".format(row["cord_uid"],skipped))
+                
                              
         if file_id in processed:
             sys.stderr.write("WARN: document with file_id {} (sha or pmcid) already processed, skipping\n".format(file_id))
+            duplicated+=1
         else:
             processed[file_id]=1
             if row["sha"] != None and row["pmcid"] != None:
@@ -292,7 +294,7 @@ def main(args):
     of.close()
     of_par.close()
     of_sent.close()
-    sys.stderr.write("\n =========================== \n SUMMARY: \n \t processed: {} \n \t keywords found in: {} \n \t skipped without code: {} \n \t file access errors: {} \n \t pmc code but not file: {} \n \t valid in trec: {} \n================== \n".format(proces_count,docs_found,skipped,file_problems,no_pmc_file, in_trec))
+    sys.stderr.write("\n =========================== \n SUMMARY: \n \t processed: {} \n \t keywords found in: {} \n \t only title and abstract for: {} \n \t file access errors: {} \n \t pmc code but not file: {} \n \t valid in trec: {} \n \t duplicated: {} \n================== \n".format(proces_count,docs_found,skipped,file_problems,no_pmc_file, in_trec,duplicated))
 
     
 
