@@ -111,12 +111,13 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
             
         indri_score=(exp(score)-min)/(max-min)  # normalized indri score
 
-        if passages == True and bert_score != None:
-            ranking_score=0.2*indri_score+0.8*bert_score
+        if bert_score != None:        #if passages == True and bert_score != None:
+            ranking_score=0.8*indri_score+0.2*bert_score
         else:
             ranking_score=indri_score
             
         if passages == False:
+            #snippet=str(doc_metadata_row.iloc[0]["title"])+" "+str(doc_metadata_row.iloc[0]["abstract"])
             snippet=doc_metadata_row.iloc[0]["abstract"]
     
 
@@ -144,11 +145,13 @@ def main(args):
     reranking_scores=args.reranking_scores
     coord_type=args.coordinates_algorithm
     krovetz_stem=args.krovetz_stem
+    stopword_file=args.stopwords
+    no_rerank = args.no_rerank
     
     #metadata="metadata.csv_covid-19.kwrds.csv.all-coords.csv"
     #passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.all-coords.csv"
-    metadata="metadata.csv_covid-19.kwrds.csv.old"
-    passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.old"
+    metadata="metadata.csv" #_covid-19.kwrds.csv.old"
+    passage_metadata="metadata.csv_covid-19-empty.kwrds.paragraphs.csv"    #"metadata.csv_covid-19.kwrds.paragraphs.csv"
     
     # metadata for documents
     metadata_doc=pd.read_csv(os.path.join(metadata_path,metadata))
@@ -179,60 +182,74 @@ def main(args):
     #fieldnames=["doc_id","source","author", "url","title",]
 
     # indri
-    #index_doc_path=os.path.join(index_root,'BildumaIndex')
-    index_pas_path=os.path.join(index_root,'BildumaTRECParIndex')
+    index_doc_path=os.path.join(index_root,'BildumaTRECAbsBodyIndex_2ndround')
+    #index_pas_path=os.path.join(index_root,'BildumaTRECParIndex')
 
-    #index_doc = pyndri.Index(index_doc_path)
-    index_pas = pyndri.Index(index_pas_path)
+    index_doc = pyndri.Index(index_doc_path)
+    #index_pas = pyndri.Index(index_pas_path)
 
     # Constructs a QueryEnvironment that uses a
     # language model with Dirichlet smoothing.
     lm_query_env = pyndri.QueryEnvironment(
-        index_pas , rules=('method:dirichlet',))
+        index_doc , rules=('method:dirichlet',))
     #print(lm_query_env.query('hello world'))
     prf_query_env = pyndri.PRFQueryEnvironment(lm_query_env,fb_docs=20, fb_terms=10)
     #print(prf_query_env.query('hello world'))
     
     
     #query tokenizer
-    tokenizer = RegexpTokenizer(r'\w+')
+    tokenizer = RegexpTokenizer(r'[\w-]+')
     #tokenizer = RegexpTokenizer(r'[^ ]+'))
 
+    #stopwords
+    with open(stopword_file) as f:
+        stopwords = [line.rstrip() for line in f]
+    sys.stderr.write("stopwords loaded - {}\n".format(len(stopwords)))
+        
     queries_df = pd.read_csv(queries,dialect='excel-tab')
     for index, row in queries_df.iterrows(): 
         #querylc = row['query'].lower()
         querylc = row['question'].lower()+" "+row['query'].lower() #+" "+row['narrative'].lower()
+        querylc2 = row['narrative'].lower()
         
-        sys.stderr.write("current query: {} \n.".format(querylc))
+        sys.stderr.write("current query: {} -- {}\n.".format(querylc,querylc2))
         tokens = tokenizer.tokenize(querylc)
         tokenized_query=" ".join(tokens)
+        #sys.stderr.write("Only tokenized: {} \n".format(tokenized_query))
+
+        tokens2 = tokenizer.tokenize(querylc2)
+        tokenized_query2=" ".join(tokens2)
+        
         #Lemmatization and stopwords removal
         if krovetz_stem:
             tokenized_query=" ".join([pyndri.krovetz_stem(t) for t in tokens if not t in stopwords])
+            tokenized_query2=" ".join([pyndri.krovetz_stem(t) for t in tokens2 if not t in stopwords])
             sys.stderr.write("tokenized and stemmed query: {} \n".format(tokenized_query))
-
+            
+        #construct query
+        complex_query="#weight(0.8 #combine("+tokenized_query+") 0.2 #combine("+tokenized_query2+"))"
         # document level results
-        #results = index_doc.query(tokenized_query, results_requested=maxdocs)
-        #docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type)
+        results = prf_query_env.query(complex_query, results_requested=maxdocs)
+        #results = prf_query_env.query(tokenized_query, results_requested=maxdocs)
+        docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type)
 
         #sys.stderr.write("docs retrieved, {} \n".format(len(docs)))
 
-        #for d in docs:
-        #    wr.writerow({"question":row["query"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0}) 
+        for d in docs:
+            wr.writerow({"question":row["query"]+" "+row["question"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0}) 
         
-        # document level results
-        results = prf_query_env.query(tokenized_query, results_requested=maxdocs)
-        pas = process_results(results,index_pas,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type, passages=True)
+        # passage level results
+        #results = prf_query_env.query(tokenized_query, results_requested=maxdocs)
+        #pas = process_results(results,index_pas,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type, passages=True)
 
-        pas_df = pd.DataFrame(pas)
+        pas_df = pd.DataFrame(docs)
 
         pas_sorted = pas_df.sort_values("ranking_score",ascending=False)
+        if no_rerank :
+            pas_sorted = pas_df.sort_values("indri_score",ascending=False)
         
-        sys.stderr.write("passages retrieved, {} \n".format(len(pas)))
+        #sys.stderr.write("passages retrieved, {} \n".format(len(pas)))
 
-        run_indri="elhuyar_indri"
-        run_rerank="elhuyar_rRnk_cbert"
-        
         doc_dict={}
         rank=1
         for index, p in pas_sorted.iterrows():
@@ -245,16 +262,20 @@ def main(args):
                 break
             
             question_id=row["id"]
-            doc_pas_id = str(p["doc_id"])
-            doc_id = doc_pas_id.split("_")[0]
+            #doc_pas_id = str(p["doc_id"])
+            doc_id = str(p["doc_id"])
+            #doc_id = doc_pas_id.split("_")[0]
 
             # already found a more relevant passage of the same document
             if doc_id in doc_dict:
                 continue
             
             doc_dict[doc_id]=1
-            print("{} Q0 {} {} {} {}".format(row['id'],doc_id, rank, p["ranking_score"],run_rerank))
-            sys.stderr.write("{} Q0 {} {} {} {}\n".format(row['id'],doc_id, rank, p["ranking_score"],run_rerank))
+            if no_rerank:
+                print("{} Q0 {} {} {} {}".format(row['id'],doc_id, rank, p["indri_score"],"elhuyar_indri"))
+            else:
+                print("{} Q0 {} {} {} {}".format(row['id'],doc_id, rank, p["ranking_score"],"elhuyar_rRnk"))
+            #sys.stderr.write("{} Q0 {} {} {} {}\n".format(row['id'],doc_id, rank, p["ranking_score"],run_rerank))
             rank+=1
 
         #query_json={"query_id":row['id'], "task": row['task'], "query":row['query'], "docs":docs,"pas":pas}
@@ -287,6 +308,8 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--coordinates-algorithm", type=str, choices=['fasttext', 'tfidf'], default='fasttext', help="Algorithm used for computing document and passage coordinates, defaults to fasttext)")
     parser.add_argument("-d", "--maxdocs", type=int, default=50, help="max number of results to return (default is 50)")
     parser.add_argument("-k", "--krovetz_stem", action='store_true', help="Apply Krovetz stemmer to queries.")
+    parser.add_argument("-n", "--no-rerank", action='store_true', help="Whether indri-based results should be returned instead of reranked results. For testing purposes.")
+    parser.add_argument("-s", "--stopwords", type=str, default='/media/nfs/multilingual/kaggle-covid19/covid-19-IR/resources/stopwords-en.txt', help="file containing scores from the finetuned BERT for reranking)")
 
     args=parser.parse_args()
 

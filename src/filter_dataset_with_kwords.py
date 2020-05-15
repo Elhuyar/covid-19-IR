@@ -28,7 +28,7 @@ def main(args):
     
     splitter = SentenceSplitter(language='en',non_breaking_prefix_file=splitter_prefixes)
     
-    inFolder= "data-20200417"
+    inFolder= "20200502"
     outFolder = "filtered"
     out_file = corpus.name+"_"+topicTermFile.name+"."+outformat
     out_file_par = corpus.name+"_"+topicTermFile.name+".paragraphs."+outformat
