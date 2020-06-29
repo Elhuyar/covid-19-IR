@@ -117,8 +117,8 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
             ranking_score=indri_score
             
         if passages == False:
-            #snippet=str(doc_metadata_row.iloc[0]["title"])+" "+str(doc_metadata_row.iloc[0]["abstract"])
-            snippet=doc_metadata_row.iloc[0]["abstract"]
+            snippet=str(doc_metadata_row.iloc[0]["title"])+" "+str(doc_metadata_row.iloc[0]["abstract"])
+            #snippet=doc_metadata_row.iloc[0]["abstract"]
     
 
         #generate uniq doc_ids for both pas and docs
@@ -182,7 +182,7 @@ def main(args):
     #fieldnames=["doc_id","source","author", "url","title",]
 
     # indri
-    index_doc_path=os.path.join(index_root,'BildumaTRECAbsBodyIndex_2ndround')
+    index_doc_path=os.path.join(index_root,'BildumaTRECAbsBodyIndex_ezmarra')#_2ndround')
     #index_pas_path=os.path.join(index_root,'BildumaTRECParIndex')
 
     index_doc = pyndri.Index(index_doc_path)
@@ -236,7 +236,10 @@ def main(args):
         #sys.stderr.write("docs retrieved, {} \n".format(len(docs)))
 
         for d in docs:
-            wr.writerow({"question":row["query"]+" "+row["question"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0}) 
+            #wr.writerow({"question":row["query"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0})
+            #wr.writerow({"question":row["question"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0})
+            wr.writerow({"question":row["query"]+" "+row["question"],"question_id":row["id"],"answer":d["text"],"answer_id":d["doc_id"],"label":0})
+            
         
         # passage level results
         #results = prf_query_env.query(tokenized_query, results_requested=maxdocs)

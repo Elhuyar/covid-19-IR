@@ -25,11 +25,15 @@ def main(args):
     topic=args.topic
     idsFile=args.ids
     splitter_prefixes=args.prefixes
-    old_round_format=args.old_rounds
+    old_round_format=args.old_format
     
     splitter = SentenceSplitter(language='en',non_breaking_prefix_file=splitter_prefixes)
-    
-    inFolder= "20200519-trec-rnd3"
+
+    #inFolder= "20200417-trec-rnd1"
+    #inFolder= "20200502-trec-rnd3"
+    #inFolder= "20200519-trec-rnd3"
+    inFolder= "20200619-trec-rnd4"
+
     outFolder = "filtered"
     out_file = corpus.name+"_"+topicTermFile.name+"."+outformat
     out_file_par = corpus.name+"_"+topicTermFile.name+".paragraphs."+outformat
@@ -120,7 +124,7 @@ def main(args):
         file_id=row["pmcid"]
         file_type="pmc_json"
         pmc_file_path=""
-        if old_rounds: # format previous to 20200510
+        if old_round_format: # format previous to 20200510
             pmc_file_path=os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,row["pmcid"]+".xml.json")
         else: # format after 20200510
             pmc_file_path=os.path.join(inFolder,"document_parses",file_type,row["pmcid"]+".xml.json")
@@ -181,7 +185,7 @@ def main(args):
            
         for i in file_ids:
             in_file=""
-            if old_rounds: # format previous to 20200510
+            if old_round_format: # format previous to 20200510
                 in_file=os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,i+extension)
             else: # format after to 20200510
                 in_file=os.path.join(inFolder,"document_parses",file_type,i+extension)
@@ -326,7 +330,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--outformat", choices=['json','csv'], default='csv', help="output format")
     parser.add_argument("-m", "--maxdocs", type=int, default='0', help="max number of documents to return")
     parser.add_argument("-t", "--topic", type=str, default='unknown', help="topic defining the words in the lists (only used for creating keyword related fields)")
-    parser.add_argument("-r", "--old-rounds", type=bool, action='store_true', help="topic defining the words in the lists (only used for creating keyword related fields)")
+    parser.add_argument("-o", "--old-format", action='store_true', help="whether the collection we are parsing is pre-20200510 or not, because metadata format and document storing folders change after that date)")
     args=parser.parse_args()
 
     #check if test_file was provided

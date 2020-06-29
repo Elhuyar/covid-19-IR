@@ -33,7 +33,7 @@ Contributions:
 * [BERT](https://github.com/google-research/bert)
 * [Flair] (https://github.com/zalandoresearch/flair)
 
-All Python dependencies are automatically install by creating a virtual environment using the venv.requirements file provided here.
+All Python dependencies are automatically installed by creating a virtual environment using the venv.requirements file provided here.
 
 
 # Script guide (ongoing work)
