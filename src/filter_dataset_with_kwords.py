@@ -25,10 +25,11 @@ def main(args):
     topic=args.topic
     idsFile=args.ids
     splitter_prefixes=args.prefixes
+    old_round_format=args.old_rounds
     
     splitter = SentenceSplitter(language='en',non_breaking_prefix_file=splitter_prefixes)
     
-    inFolder= "20200502"
+    inFolder= "20200519-trec-rnd3"
     outFolder = "filtered"
     out_file = corpus.name+"_"+topicTermFile.name+"."+outformat
     out_file_par = corpus.name+"_"+topicTermFile.name+".paragraphs."+outformat
@@ -118,8 +119,13 @@ def main(args):
         #we give preference to sha over pmc
         file_id=row["pmcid"]
         file_type="pmc_json"
-        if row["pmcid"] == None or row["pmcid"] == '' or not os.path.isfile(os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,row["pmcid"]+".xml.json")):
-            if not os.path.isfile(os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,row["pmcid"]+".xml.json")):
+        pmc_file_path=""
+        if old_rounds: # format previous to 20200510
+            pmc_file_path=os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,row["pmcid"]+".xml.json")
+        else: # format after 20200510
+            pmc_file_path=os.path.join(inFolder,"document_parses",file_type,row["pmcid"]+".xml.json")
+        if row["pmcid"] == None or row["pmcid"] == '' or not os.path.isfile(pmc_file_path):
+            if not os.path.isfile(pmc_file_path):
                 no_pmc_file+=1
                 sys.stderr.write("WARN: document {} has pmcid {}, but no file with that code is present, let's try with sha (pdf) \n".format(row["cord_uid"],row["pmcid"]))
 
@@ -174,8 +180,11 @@ def main(args):
            paragraph_id+=1
            
         for i in file_ids:
-            in_file=os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,i+extension)
-            #out_file=os.path.join(outFolder,row["full_text_file"],row["full_text_file"],file_type,file_id+extension)
+            in_file=""
+            if old_rounds: # format previous to 20200510
+                in_file=os.path.join(inFolder,row["full_text_file"],row["full_text_file"],file_type,i+extension)
+            else: # format after to 20200510
+                in_file=os.path.join(inFolder,"document_parses",file_type,i+extension)
 
             article={}
             try: 
@@ -317,6 +326,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--outformat", choices=['json','csv'], default='csv', help="output format")
     parser.add_argument("-m", "--maxdocs", type=int, default='0', help="max number of documents to return")
     parser.add_argument("-t", "--topic", type=str, default='unknown', help="topic defining the words in the lists (only used for creating keyword related fields)")
+    parser.add_argument("-r", "--old-rounds", type=bool, action='store_true', help="topic defining the words in the lists (only used for creating keyword related fields)")
     args=parser.parse_args()
 
     #check if test_file was provided
