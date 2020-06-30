@@ -13,7 +13,7 @@ import csv
 
 from math import exp
 
-def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_scores_df, query_id, coord_type, passages=False):
+def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_scores_df, query_id, coord_type, rerank_weight, passages=False):
     output=[]
     count=0
 
@@ -112,7 +112,7 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
         indri_score=(exp(score)-min)/(max-min)  # normalized indri score
 
         if bert_score != None:        #if passages == True and bert_score != None:
-            ranking_score=0.8*indri_score+0.2*bert_score
+            ranking_score=(1-rerank_weight)*indri_score+(rerank_weight*bert_score)
         else:
             ranking_score=indri_score
             
@@ -147,6 +147,7 @@ def main(args):
     krovetz_stem=args.krovetz_stem
     stopword_file=args.stopwords
     no_rerank = args.no_rerank
+    rerank_weight=args.rerank_weight
     
     #metadata="metadata.csv_covid-19.kwrds.csv.all-coords.csv"
     #passage_metadata="metadata.csv_covid-19.kwrds.paragraphs.csv.all-coords.csv"
@@ -231,7 +232,7 @@ def main(args):
         # document level results
         results = prf_query_env.query(complex_query, results_requested=maxdocs)
         #results = prf_query_env.query(tokenized_query, results_requested=maxdocs)
-        docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type)
+        docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type,rerank_weight)
 
         #sys.stderr.write("docs retrieved, {} \n".format(len(docs)))
 
@@ -243,7 +244,7 @@ def main(args):
         
         # passage level results
         #results = prf_query_env.query(tokenized_query, results_requested=maxdocs)
-        #pas = process_results(results,index_pas,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type, passages=True)
+        #pas = process_results(results,index_pas,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type, rerank_weight, passages=True)
 
         pas_df = pd.DataFrame(docs)
 
@@ -308,11 +309,13 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--index-path", type=str, default='/media/nfs/multilingual/kaggle-covid19/xabi_scripts', help="path to the folder containing Indri indexes")
     parser.add_argument("-m", "--metadata-path", type=str, default='/media/nfs/multilingual/kaggle-covid19', help="path to the folder containing metadata files")
     parser.add_argument("-r", "--reranking-scores", type=str, default='/media/nfs/multilingual/kaggle-covid19/reranking_scores.tsv', help="file containing scores from the finetuned BERT for reranking)")
+    parser.add_argument("-rw", "--rerank_weight", type=float, default=0.2, help="Weight of the reranking scores)")
     parser.add_argument("-c", "--coordinates-algorithm", type=str, choices=['fasttext', 'tfidf'], default='fasttext', help="Algorithm used for computing document and passage coordinates, defaults to fasttext)")
     parser.add_argument("-d", "--maxdocs", type=int, default=50, help="max number of results to return (default is 50)")
     parser.add_argument("-k", "--krovetz_stem", action='store_true', help="Apply Krovetz stemmer to queries.")
     parser.add_argument("-n", "--no-rerank", action='store_true', help="Whether indri-based results should be returned instead of reranked results. For testing purposes.")
-    parser.add_argument("-s", "--stopwords", type=str, default='/media/nfs/multilingual/kaggle-covid19/covid-19-IR/resources/stopwords-en.txt', help="file containing scores from the finetuned BERT for reranking)")
+    parser.add_argument("-s", "--stopwords", type=str, default='/media/nfs/multilingual/kaggle-covid19/covid-19-IR/resources/stopwords-en.txt', help="file containing stopwords for the tokenizer and indri querying)")
+
 
     args=parser.parse_args()
 
