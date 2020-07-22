@@ -155,7 +155,7 @@ def main(args):
     passage_metadata="metadata.csv_covid-19-empty.kwrds.paragraphs.csv"    #"metadata.csv_covid-19.kwrds.paragraphs.csv"
     
     # metadata for documents
-    metadata_doc=pd.read_csv(os.path.join(metadata_path,metadata))
+    metadata_doc=pd.read_csv(os.path.join(metadata_path,metadata),dtype={"mag_id":str,"who_covidence_id":str,"arxiv_id":str})
     sys.stderr.write("metadata shape: {} \n".format(metadata_doc.shape))
 
     # if passages are to be retrieved instead of full documents open also metadata for passages.
@@ -183,7 +183,11 @@ def main(args):
     #fieldnames=["doc_id","source","author", "url","title",]
 
     # indri
-    index_doc_path=os.path.join(index_root,'BildumaTRECAbsBodyIndex_ezmarra')#_2ndround')
+    #index_doc_path=os.path.join(index_root,'BildumaTRECAbsBodyIndex_ezmarra')#_ round 1')
+    #index_doc_path=os.path.join(index_root,'BildumaTRECAbsBodyIndex_2ndround')
+    index_doc_path=os.path.join(index_root,'BildumaTRECAbsIndex_round3_all') #BildumaTRECAbsIndex_round3') 
+    
+    
     #index_pas_path=os.path.join(index_root,'BildumaTRECParIndex')
 
     index_doc = pyndri.Index(index_doc_path)
