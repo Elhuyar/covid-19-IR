@@ -1,4 +1,4 @@
-import pyndri
+#import pyndri
 from nltk.tokenize import RegexpTokenizer
 
 import pandas as pd
@@ -13,14 +13,15 @@ import csv
 
 from math import exp
 
-def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_scores_df, query_id, coord_type, rerank_weight, rerank_cutoff, passages=False):
+def process_results(indri_results,metadata_df, metadata_pas_df, reranking_scores_df, query_id, coord_type, rerank_weight, rerank_cutoff, max_rank_docs, passages=False):
     output=[]
     count=0
 
     #score normalization
     min=1
     max=0
-    for int_document_id, score in indri_results:
+    for index, p in indri_results.iterrows():
+        score=p['score']
         if exp(score) < min:
             min=exp(score)
         if exp(score) > max:
@@ -55,10 +56,15 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
     """
             
     #loop throgout result and prepare output
-    for int_document_id, score in indri_results:
+    for index, p in indri_results.iterrows():
         count+=1
-        ext_document_id, _ = index.document(int_document_id)
-
+        if count > max_rank_docs:
+            sys.stderr.write("maximum number of documents reached the rest of the ranking will be discarded (count =  {}).\n".format(count))
+            break
+            
+        score=p['score']
+        ext_document_id = p['doc']
+        int_document_id=p['rank']
         doc_id = ext_document_id
         sys.stderr.write("\r processed {} documents/passages {} ".format(count, ext_document_id))
         snippet=""
@@ -111,6 +117,14 @@ def process_results(indri_results,index,metadata_df, metadata_pas_df, reranking_
             
         indri_score=(exp(score)-min)/(max-min)  # normalized indri score
 
+        """
+        if bert_score != None:
+            ranking_score=(1-rerank_weight)*indri_score+(rerank_weight*bert_score)
+        else:
+            ranking_score=indri_score
+        """
+
+            
         ranking_score=indri_score
         if bert_score != None:
             if rerank_cutoff <= 0:
@@ -177,7 +191,7 @@ def main(args):
         reranking_scores_df=pd.read_csv(reranking_scores,dialect='excel-tab')
 
 
-    rerank_csv="rerank-queries_filter.tsv"
+    rerank_csv="rerank-queries_nofilter-precomp.tsv"
     of=open(rerank_csv,"w", encoding='utf-8')
     fieldnames=["question", "question_id","answer","answer_id","label"]
     wr=csv.DictWriter(of,fieldnames=fieldnames, dialect='excel-tab')
@@ -194,34 +208,11 @@ def main(args):
     #index_doc_path=os.path.join(index_root,'BildumaTRECAbsBodyIndex_ezmarra')#_ round 1')
     #index_doc_path=os.path.join(index_root,'BildumaTRECAbsBodyIndex_2ndround')
     #index_doc_path=os.path.join(index_root,'BildumaTRECAbsIndex_round3_all') #BildumaTRECAbsIndex_round3')
-    #index_doc_path=os.path.join(index_root,'BildumaTRECAbsIndex_round3_exp') #BildumaTRECAbsIndex_round3all_exp')
-    #index_doc_path=os.path.join(index_root,'BildumaTRECAbsIndex_round4_filtered')
-    index_doc_path=os.path.join(index_root,'BildumaTRECAbsIndex_round5_filtered')  # BildumaTRECAbsIndex_round5_Notfiltered') 
-    
-    
-    #index_pas_path=os.path.join(index_root,'BildumaTRECParIndex')
+    #index_doc_path=os.path.join(index_root,'BildumaTRECAbsIndex_round3all_exp') #BildumaTRECAbsIndex_round3all_exp')
+    #index_doc_path=os.path.join(index_root,'BildumaTRECAbsIndex_round4_Nofiltered')
 
-    index_doc = pyndri.Index(index_doc_path)
-    #index_pas = pyndri.Index(index_pas_path)
-
-    # Constructs a QueryEnvironment that uses a
-    # language model with Dirichlet smoothing.
-    lm_query_env = pyndri.QueryEnvironment(
-        index_doc , rules=('method:dirichlet',))
-    #print(lm_query_env.query('hello world'))
-    prf_query_env = pyndri.PRFQueryEnvironment(lm_query_env, fb_docs=20, fb_terms=10)# best config without filter words:  fb_docs=35, fb_terms=25
-    #print(prf_query_env.query('hello world'))
+    indri_df=pd.read_csv(index_root, sep=' ', header=None, names=["topic","Q0","doc","rank","score","run_id"])
     
-    
-    #query tokenizer
-    tokenizer = RegexpTokenizer(r'[\w-]+')
-    #tokenizer = RegexpTokenizer(r'[^ ]+'))
-
-    #stopwords
-    with open(stopword_file) as f:
-        stopwords = [line.rstrip() for line in f]
-    sys.stderr.write("stopwords loaded - {}\n".format(len(stopwords)))
-        
     queries_df = pd.read_csv(queries,dialect='excel-tab')
     for index, row in queries_df.iterrows(): 
         #querylc = row['query'].lower()
@@ -229,25 +220,11 @@ def main(args):
         querylc2 = row['narrative'].lower()
         
         sys.stderr.write("current query: {} -- {}\n.".format(querylc,querylc2))
-        tokens = tokenizer.tokenize(querylc)
-        tokenized_query=" ".join(tokens)
-        #sys.stderr.write("Only tokenized: {} \n".format(tokenized_query))
 
-        tokens2 = tokenizer.tokenize(querylc2)
-        tokenized_query2=" ".join(tokens2)
+        # document level results from file
+        indri_query=indri_df[indri_df["topic"]==row['id']]
         
-        #Lemmatization and stopwords removal
-        if krovetz_stem:
-            tokenized_query=" ".join([pyndri.krovetz_stem(t) for t in tokens if not t in stopwords])
-            tokenized_query2=" ".join([pyndri.krovetz_stem(t) for t in tokens2 if not t in stopwords])
-            sys.stderr.write("tokenized and stemmed query: {} \n".format(tokenized_query))
-            
-        #construct query
-        complex_query="#weight(0.8 #combine("+tokenized_query+") 0.2 #combine("+tokenized_query2+"))"
-        # document level results
-        results = prf_query_env.query(complex_query, results_requested=maxdocs)
-        #results = prf_query_env.query(tokenized_query, results_requested=maxdocs)
-        docs = process_results(results,index_doc,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type,rerank_weight, rerank_cutoff)
+        docs = process_results(indri_query,metadata_doc, metadata_pas, reranking_scores_df, row["id"], coord_type,rerank_weight, rerank_cutoff, maxdocs)
 
         #sys.stderr.write("docs retrieved, {} \n".format(len(docs)))
 
@@ -321,7 +298,7 @@ if __name__ == "__main__":
         prog='retrieval.py' )
 
     parser.add_argument("queries", type=argparse.FileType('r'), help="File containing queries for document or or passage retrieval. tsv format, including one column called 'query'.")  
-    parser.add_argument("-i", "--index-path", type=str, default='/media/nfs/multilingual/kaggle-covid19/xabi_scripts', help="path to the folder containing Indri indexes")
+    parser.add_argument("-i", "--index-path", type=str, default='/media/nfs/multilingual/kaggle-covid19/xabi_scripts', help="path to the file containing indri rankings")
     parser.add_argument("-m", "--metadata-path", type=str, default='/media/nfs/multilingual/kaggle-covid19', help="path to the folder containing metadata files")
     parser.add_argument("-r", "--reranking-scores", type=str, default='/media/nfs/multilingual/kaggle-covid19/reranking_scores.tsv', help="file containing scores from the finetuned BERT for reranking)")
     parser.add_argument("-rw", "--rerank_weight", type=float, default=0.2, help="Weight of the reranking scores)")
